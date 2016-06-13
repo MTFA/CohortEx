@@ -1,3 +1,19 @@
+/*
+ *  Copyright 2016 by Maria Tereza Fernandes Abrahao.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 --------------------------------------------------------
 --  DOUTORADO MARIA TEREZA ABRAHAO 2016
 --  SCRIPT DO METODO DE EXTRACAO DE COORTES PARA ESTUDOS EM DCV
@@ -7253,21 +7269,4 @@ INNER JOIN
 ON
   TFS.PATIENT_ID = TTS.PATIENT_ID
 );
---------------------------------------------------------
---
---  COMPARA COM HISTORICO
---
--------------------------------------------------------- 
--- 3308 Mudaram de sexo: 3302 (->O) 3(->D) 2(F->M) 1(M->F)
--- NEW:966621 - OLD:908628 = 57993
--- NEW:850789 = 57839
-
-SELECT A.PATIENT_ID, A.GENDER, B.GENDER_NEW FROM SI_TEREZA_ABRAHAO2.ALL_PATIENT A INNER JOIN 
-(SELECT PATIENT_ID,GENDER AS GENDER_NEW FROM CLEAN_PATIENT where PATIENT_ID IN (
-select distinct PATIENT_ID from VALID_PATIENT where PATIENT_ID IN (
-select PATIENT_ID FROM SI_TEREZA_ABRAHAO2.STUDY_PATIENT 
-MINUS
-select PATIENT_ID FROM SELECTED_PATIENT))) B
-ON A.PATIENT_ID = B.PATIENT_ID
-;
 
