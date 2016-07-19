@@ -7095,7 +7095,7 @@ SELECT
         END
     )                                                                                                          AS  OUTCOME_FLAG 
   , NVL2(DEATH_DATE,  1,0)                                                                                     AS  DEATH_FLAG
-  
+
 FROM 
   TRANSFORM_FIRST_DIAGNOSIS TFD
 INNER JOIN
@@ -7119,6 +7119,17 @@ LEFT OUTER JOIN
 ON
   TFD.PATIENT_ID = SD.PATIENT_ID
 
+);
+-- ******************************************************
+CREATE OR REPLACE VIEW COHORT_INTERVENTION AS
+(
+SELECT  DEIDENTIFIED_ID
+      , MAX(INTERVENTION_DRUG)                      AS INTERVENTION_FLAG
+      , MIN(AGE_AT_ERA_BEGIN)                       AS INTERVENTION_BEGIN
+      , MAX(AGE_AT_ERA_END)                         AS INTERVENTION_END
+      , MAX(AGE_AT_ERA_END) - MIN(AGE_AT_ERA_BEGIN) AS INTERVENTION_INTERVAL
+FROM SELECTED_DRUGS 
+GROUP BY DEIDENTIFIED_ID
 );
 
 -- ******************************************************
