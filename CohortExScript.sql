@@ -218,6 +218,16 @@ END;
 /
 
 BEGIN
+   EXECUTE IMMEDIATE 'DROP VIEW COHORT_SELECTOR_FSTLST_ENCOUNTER';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN
+         RAISE;
+      END IF;
+END;
+/
+
+BEGIN
    EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW AUX_ENCOUNTERS';
 EXCEPTION
    WHEN OTHERS THEN
@@ -6729,7 +6739,56 @@ CREATE INDEX TFE_PATID  ON TRANSFORM_FIRSTLAST_ENCOUNTER (PATIENT_ID) /* tablesp
 
 COMMIT;
 -- ******************************************************
-
+CREATE OR REPLACE VIEW COHORT_SELECTOR_FSTLST_ENCOUNTER
+AS
+(
+  SELECT 
+        * 
+  FROM 
+    TRANSFORM_FIRSTLAST_ENCOUNTER
+  WHERE 
+   (
+      -- INCLUDE FILTER (ENABLE)
+      (
+        'Y' IN (SELECT PARAMETER_VALUE 
+        FROM CURRENT_RUN_YESNO_PARAMS 
+        WHERE 
+            CRITERIA_ID = 'DIAGNOSIS_DATE_ON_STUDY_INTERVAL' 
+        AND PARAMETER_TYPE = 'FILTER_ENABLING'
+        )
+      )
+    AND
+      (
+      -- FILTER SELECTED GENDERS
+      FIRST_ENCOUNTER_DATE    >=   (SELECT MAX (PARAMETER_VALUE) 
+                            FROM CURRENT_RUN_DATE_PARAMS 
+                            WHERE 
+                                CRITERIA_ID = 'STUDY_BEGIN' 
+                            AND PARAMETER_TYPE = 'INTERVAL_DATE'
+                            )
+      )
+    AND
+      (
+      -- FILTER SELECTED GENDERS
+      FIRST_ENCOUNTER_DATE    <   (SELECT MAX (PARAMETER_VALUE) 
+                            FROM CURRENT_RUN_DATE_PARAMS 
+                            WHERE 
+                                CRITERIA_ID = 'STUDY_END' 
+                            AND PARAMETER_TYPE = 'INTERVAL_DATE'
+                            )
+      )
+    OR
+      -- EXCLUDE FILTER (DISABLE)
+    (
+          'N' IN (SELECT PARAMETER_VALUE 
+          FROM CURRENT_RUN_YESNO_PARAMS 
+          WHERE 
+              CRITERIA_ID = 'DIAGNOSIS_DATE_ON_STUDY_INTERVAL' 
+          AND PARAMETER_TYPE = 'FILTER_ENABLING'
+          )
+    )
+  )
+);
 -- ******************************************************
 
 COMMIT;
@@ -6915,7 +6974,7 @@ SELECT
     , B.INPATIENT
 
 FROM 
-  TRANSFORM_FIRSTLAST_ENCOUNTER  A
+  COHORT_SELECTOR_FSTLST_ENCOUNTER  A
 INNER JOIN 
   TRANSFORM_TRANSP_ENC_PROFILE B
 ON 
