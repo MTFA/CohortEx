@@ -3009,15 +3009,24 @@ AS
 -- ******************************************************
 CREATE OR REPLACE VIEW VALID_DEATH AS
 (
-  SELECT * FROM ES_DEATH
-  WHERE PATIENT_ID NOT IN
+  SELECT 
+    A.* 
+  FROM 
+    ES_DEATH A
+  INNER JOIN 
     (
+      SELECT 
+        PATIENT_ID
+      FROM 
+        ES_DEATH
+      MINUS 
       SELECT 
         PATIENT_ID 
       FROM 
         DETECT_DUPLICATE_DEATH
-    )
-
+    ) B
+  ON
+    A.PATIENT_ID = B.PATIENT_ID
 );
 
 -- ******************************************************
@@ -7218,6 +7227,7 @@ CREATE OR REPLACE VIEW COHORT_DEATH AS
 SELECT 
     DEIDENTIFIED_ID
     , FLOOR(DEATH_DATE - BIRTH_DATE) AGE_AT_DEATH
+    , DEATH_CAUSE
 
 FROM 
   SELECTED_DEATH
