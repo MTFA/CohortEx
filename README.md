@@ -5,7 +5,7 @@ Pauá external model is described in detail in [Tereza] paper.
 Here you find the following files:  
   - CohortExScript.sql  
   - CohortExScript.Rmd
-  - 
+
 ##### CohortExScript.sql:
 This sql script is made enterly of views and targeted initially for Oracle, but aims to be easly ported to other sql flavors. Most of it is ANSI SQL, create materialized views statetments are used as a form to obtain performance but can be changed to create tables to use in other DBMS without materialized views facilities.  
 The script first drops all views and then recreates them which ends selecting the data. It expects just the Pauá external model views to be already present before it runs, so you must implement the mapping between your EHR tables and the Pauá views.
