@@ -3335,7 +3335,7 @@ SELECT
           "ICD10_CHAPTER"
         , "DESCRIPTION" 
         , "QUANTITY"
-        , "PERCENT(%)" 
+        , "PERCENT" 
 FROM
         (
         SELECT 
@@ -3454,7 +3454,7 @@ SELECT
           "Capítulo CID"
         , "Descrição" 
         , "Quantidade"
-        , "Percentual(%)" 
+        , "Percentual" 
 FROM
         (
         SELECT 
