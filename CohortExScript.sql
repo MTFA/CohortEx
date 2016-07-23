@@ -198,6 +198,16 @@ END;
 /
 
 BEGIN
+   EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW TRANSFORM_INDEX_FSTDIAGNOSIS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -12003 THEN
+         RAISE;
+      END IF;
+END;
+/
+
+BEGIN
    EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW COHORT_SELECTOR_PATIENT_GENDER';
 EXCEPTION
    WHEN OTHERS THEN
@@ -288,7 +298,27 @@ END;
 /
 
 BEGIN
+   EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW STUDY_OVERALL_POPULATION';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -12003 THEN
+         RAISE;
+      END IF;
+END;
+/
+
+BEGIN
    EXECUTE IMMEDIATE 'DROP VIEW COHORT_SELECTOR_STUDY_INT_LAB';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN
+         RAISE;
+      END IF;
+END;
+/
+
+BEGIN
+   EXECUTE IMMEDIATE 'DROP VIEW COHORT_OVERALL_POPULATION';
 EXCEPTION
    WHEN OTHERS THEN
       IF SQLCODE != -942 THEN
@@ -4412,6 +4442,186 @@ CREATE INDEX CSDPATID  ON COHORT_SELECTOR_DIAGNOSIS (PATIENT_ID) /* tablespace i
 COMMIT;
 
 -- ******************************************************
+-- ******************************************************
+CREATE MATERIALIZED VIEW TRANSFORM_INDEX_FSTDIAGNOSIS
+AS
+(
+  SELECT 
+          PATIENT_ID
+        , DIAGNOSIS_ID
+        , ICD10
+        , SUBSTR(ICD10,1,3) AS ICD10_CATEGORY
+        , DIAGNOSIS_DATE
+  FROM 
+        COHORT_SELECTOR_STUDY_INTERVAL
+  WHERE
+    (
+          (
+            'Y' = (SELECT PARAMETER_VALUE 
+            FROM CURRENT_RUN_YESNO_PARAMS 
+            WHERE 
+                CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+            AND PARAMETER_TYPE = 'FILTER_ENABLING'
+            )
+          )
+        AND
+        (PATIENT_ID,DIAGNOSIS_ID) IN
+          --- INCLUSION DIAGNOSTICS
+          (
+            SELECT
+                PATIENT_ID
+              , MIN(DIAGNOSIS_ID)
+            FROM
+              COHORT_SELECTOR_STUDY_INTERVAL
+            WHERE
+              (
+              --- PARTIAL CATEGORY (JUST EXACT 3 CHARS CODES)
+              TRIM(ICD10) IN (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_STR_PARAMS 
+                WHERE 
+                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                AND PARAMETER_TYPE = 'ICD10_CATEGORY_PARTIAL'
+                AND INCLUSION_EXCLUSION = 'I'
+                )
+                OR
+              --- FULL CATEGORY (ANY 3 CHARS OR MORE CODES)
+              SUBSTR(ICD10,1,3) IN (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_STR_PARAMS 
+                WHERE 
+                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                AND PARAMETER_TYPE = 'ICD10_CATEGORY_FULL'
+                AND INCLUSION_EXCLUSION = 'I'
+                )
+                OR
+              --- SUBCATEGORY (ONLY 5 CHARS CODES)
+              SUBSTR(ICD10,1,5) IN (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_STR_PARAMS 
+                WHERE 
+                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                AND PARAMETER_TYPE = 'ICD10_SUBCATEGORY'
+                AND INCLUSION_EXCLUSION = 'I'
+                )
+                OR
+              --- ETIOLOGY AND LOCALIZATION (ONLY 7 CHARS CODES)
+              SUBSTR(ICD10,1,7) IN (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_STR_PARAMS 
+                WHERE 
+                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                AND PARAMETER_TYPE = 'ICD10_ETIOLOGY'
+                AND INCLUSION_EXCLUSION = 'I'
+                )
+                OR
+              --- EXTENSION (ONLY 8 CHARS CODES)
+               SUBSTR(ICD10,1,8) IN (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_STR_PARAMS 
+                WHERE 
+                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                AND PARAMETER_TYPE = 'ICD10_EXTENSION'
+                AND INCLUSION_EXCLUSION = 'I'
+                )
+             )
+            GROUP BY PATIENT_ID
+          )
+        AND
+        (PATIENT_ID,DIAGNOSIS_ID) NOT IN
+          --- EXCLUSION DIAGNOSTICS
+        (
+            SELECT
+                PATIENT_ID
+              , MIN(DIAGNOSIS_ID)
+            FROM
+              COHORT_SELECTOR_STUDY_INTERVAL
+            WHERE
+              (
+              --- PARTIAL CATEGORY (JUST EXACT 3 CHARS CODES)
+              TRIM(ICD10) IN (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_STR_PARAMS 
+                WHERE 
+                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                AND PARAMETER_TYPE = 'ICD10_CATEGORY_PARTIAL'
+                AND INCLUSION_EXCLUSION = 'E'
+                )
+                OR
+              --- FULL CATEGORY (ANY 3 CHARS OR MORE CODES)
+              SUBSTR(ICD10,1,3) IN (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_STR_PARAMS 
+                WHERE 
+                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                AND PARAMETER_TYPE = 'ICD10_CATEGORY_FULL'
+                AND INCLUSION_EXCLUSION = 'E'
+                )
+                OR
+              --- SUBCATEGORY (ONLY 5 CHARS CODES)
+              SUBSTR(ICD10,1,5) IN (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_STR_PARAMS 
+                WHERE 
+                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                AND PARAMETER_TYPE = 'ICD10_SUBCATEGORY'
+                AND INCLUSION_EXCLUSION = 'E'
+                )
+                OR
+              --- ETIOLOGY AND LOCALIZATION (ONLY 7 CHARS CODES)
+              SUBSTR(ICD10,1,7) IN (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_STR_PARAMS 
+                WHERE 
+                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                AND PARAMETER_TYPE = 'ICD10_ETIOLOGY'
+                AND INCLUSION_EXCLUSION = 'E'
+                )
+                OR
+              --- EXTENSION (ONLY 8 CHARS CODES)
+               SUBSTR(ICD10,1,8) IN (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_STR_PARAMS 
+                WHERE 
+                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                AND PARAMETER_TYPE = 'ICD10_EXTENSION'
+                AND INCLUSION_EXCLUSION = 'E'
+                )
+             )
+              GROUP BY PATIENT_ID
+         ) 
+            
+    )
+    UNION 
+    SELECT 
+            A.PATIENT_ID        AS PATIENT_ID
+          , A.DIAGNOSIS_ID      AS DIAGNOSIS_ID
+          , A.ICD10             AS ICD10
+          , SUBSTR(A.ICD10,1,3) AS ICD10_CATEGORY
+          , A.DIAGNOSIS_DATE    AS DIAGNOSIS_DATE
+    FROM 
+      COHORT_SELECTOR_STUDY_INTERVAL  A
+    INNER JOIN 
+      (
+        SELECT 
+                PATIENT_ID
+              , MIN(DIAGNOSIS_ID) AS DIAGNOSIS_ID
+        FROM 
+          COHORT_SELECTOR_STUDY_INTERVAL
+        GROUP BY 
+          PATIENT_ID
+      ) B
+    ON 
+          A.PATIENT_ID = B.PATIENT_ID 
+      AND A.DIAGNOSIS_ID = B.DIAGNOSIS_ID
+    WHERE 
+      (
+            (
+              'N' = (SELECT PARAMETER_VALUE 
+              FROM CURRENT_RUN_YESNO_PARAMS 
+              WHERE 
+                  CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+              AND PARAMETER_TYPE = 'FILTER_ENABLING'
+              )
+            )
+      )
+);
+
+CREATE INDEX TIFPATID  ON TRANSFORM_INDEX_FSTDIAGNOSIS (PATIENT_ID) /* tablespace index placeholder */ ;
+
+COMMIT;
+
+-- ******************************************************
 CREATE MATERIALIZED VIEW OUTCOME_SELECTOR_DIAGNOSIS
 AS
 (
@@ -4834,22 +5044,10 @@ CREATE OR REPLACE VIEW TRANSFORM_FIRST_DIAGNOSIS AS
   FROM
     BP_DIAGNOSIS BPD
   INNER JOIN
-    COHORT_SELECTOR_DIAGNOSIS CSD
+    TRANSFORM_INDEX_FSTDIAGNOSIS TIF
   ON
-    BPD.PATIENT_ID = CSD.PATIENT_ID
-  INNER JOIN
-    (
-      SELECT 
-                            PATIENT_ID
-        , MIN(DIAGNOSIS_ID) FIRST_DIAGNOSIS_ID
-    FROM 
-      BP_DIAGNOSIS
-    GROUP BY 
-      PATIENT_ID
-    ) FST_DIAGID
-  ON
-        BPD.PATIENT_ID   = FST_DIAGID.PATIENT_ID
-    AND BPD.DIAGNOSIS_ID = FST_DIAGID.FIRST_DIAGNOSIS_ID
+        BPD.PATIENT_ID    = TIF.PATIENT_ID
+    AND BPD.DIAGNOSIS_ID  = TIF.DIAGNOSIS_ID
 );
 
 -- ******************************************************
@@ -6968,7 +7166,42 @@ CREATE INDEX OSSPATID  ON OUTCOME_SELECTOR_SURGERY (PATIENT_ID) /* tablespace in
 
 COMMIT;
 -- ******************************************************
+CREATE MATERIALIZED VIEW STUDY_OVERALL_POPULATION AS
+(
+  SELECT 
+      A.DEIDENTIFIED_ID
+    , A.PATIENT_ID
+    , A.BIRTH_DATE
+    , A.GENDER
+    , A.AGE_AT_STUDY_BEGIN
+    , A.AGE_AT_STUDY_END
+  FROM 
+    COHORT_SELECTOR_PATIENT_GENDER A
+  INNER JOIN 
+    ( SELECT 
+        DISTINCT (PATIENT_ID) 
+      FROM 
+        COHORT_SELECTOR_STUDY_INTERVAL
+    ) B
+  ON 
+    A.PATIENT_ID=B.PATIENT_ID
+);
 
+CREATE INDEX SOPPATID  ON STUDY_OVERALL_POPULATION (PATIENT_ID) /* tablespace index placeholder */ ;
+
+COMMIT;
+-- ******************************************************
+CREATE OR REPLACE VIEW COHORT_OVERALL_POPULATION AS
+(
+  SELECT 
+      DEIDENTIFIED_ID
+    , GENDER
+    , AGE_AT_STUDY_BEGIN
+    , AGE_AT_STUDY_END
+  FROM 
+    STUDY_OVERALL_POPULATION
+);
+-- ******************************************************
 CREATE OR REPLACE VIEW COHORT_ENCOUNTER AS
 (
 SELECT 
@@ -7162,7 +7395,9 @@ SELECT
         END
     )                                                                                                          AS  OUTCOME_FLAG 
   , NVL2(DEATH_DATE,  1,0)                                                                                     AS  DEATH_FLAG
-
+  , NVL2(BPPCI.HAD_PCI,1,0)                                                                                    AS  PCI_FLAG
+  , NVL2(BPSURG.HAD_SURGERY,1,0)                                                                               AS  SURGERY_FLAG
+  , NVL2(DIAG_OUTCOME_DATE,1,0)                                                                                AS  SCND_DIAG_FLAG
 FROM 
   TRANSFORM_FIRST_DIAGNOSIS TFD
 INNER JOIN
@@ -7185,9 +7420,17 @@ LEFT OUTER JOIN
   SELECTED_DEATH SD
 ON
   TFD.PATIENT_ID = SD.PATIENT_ID
-
+LEFT OUTER JOIN
+  (SELECT DISTINCT(PATIENT_ID), 1 AS HAD_PCI FROM BP_PCI) BPPCI
+ON 
+  BPPCI.PATIENT_ID = TFD.PATIENT_ID
+LEFT OUTER JOIN
+  (SELECT DISTINCT(PATIENT_ID), 1 AS HAD_SURGERY FROM BP_SURGERY) BPSURG
+ON 
+  BPSURG.PATIENT_ID = TFD.PATIENT_ID
 );
 -- ******************************************************
+
 CREATE OR REPLACE VIEW COHORT_INTERVENTION AS
 (
 SELECT  DEIDENTIFIED_ID
