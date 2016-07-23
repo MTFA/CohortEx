@@ -618,6 +618,16 @@ EXCEPTION
             END IF;
 END;
 /
+
+BEGIN
+     EXECUTE IMMEDIATE 'DROP VIEW INDICATOR_SURGERY_PT';
+EXCEPTION
+     WHEN OTHERS THEN
+            IF SQLCODE != -942 THEN
+                 RAISE;
+            END IF;
+END;
+/
 --------------------------------------------------------
 --  DROP ALL INVALID
 --------------------------------------------------------
@@ -3722,6 +3732,50 @@ select
 
 -- **********************************************
   CREATE OR REPLACE VIEW INDICATOR_SURGERY AS
+  (
+  SELECT 
+      A.SURGICAL_SPECIALITY AS "LOCAL VOCABULARY CODE"
+    , (
+      CASE 
+        WHEN A.SURGICAL_SPECIALITY = 'CCOR' THEN 'Coronary Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'CCON' THEN 'Congenital Cardiomyopathies'
+        WHEN A.SURGICAL_SPECIALITY = 'CMPA' THEN 'Artificial Cardiac Stimulation'
+        WHEN A.SURGICAL_SPECIALITY = 'CVAL' THEN 'Valvular Cardiopathies'
+        WHEN A.SURGICAL_SPECIALITY = 'CGER' THEN 'General Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'TNCA' THEN 'Thoracic Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'CVAS' THEN 'Vascular Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'CCAG' THEN 'Cardiac Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'CSEP' THEN 'SEPACO'
+        WHEN A.SURGICAL_SPECIALITY = 'COVA' THEN 'Coronary/Valve'
+        WHEN A.SURGICAL_SPECIALITY = 'CNPQ' THEN 'Neuropsychiatric Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'CPLA' THEN 'Plastic Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'CURO' THEN 'Urology Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'CICP' THEN 'Oral and Maxillofacial Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'TGER' THEN 'Thoracic Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'CODO' THEN 'Dental Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'COTO' THEN 'Otolaryngologic Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'COBS' THEN 'Obstetric Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'TRA2' THEN 'Otolaryngologic Surgery more than 12yo'
+        WHEN A.SURGICAL_SPECIALITY = 'CORT' THEN 'Orthopaedic Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'CGIN' THEN 'Obstetrics and Gynecology Surgery'
+        WHEN A.SURGICAL_SPECIALITY = 'CTX'  THEN 'Transplant'
+        WHEN A.SURGICAL_SPECIALITY = 'NECI' THEN 'Neurological Surgery'
+        ELSE 'OTHERS' END
+        )                   AS "DESCRIPTION"
+    , count(*)              AS "SURGERIES QUANTITY"
+
+  FROM 
+    FILTER_SURGERY_ENROLLMENT A
+
+  GROUP BY 
+      A.SURGICAL_SPECIALITY
+    , "DESCRIPTION"
+  )
+ORDER BY 
+    "SURGERIES QUANTITY" DESC
+ ;
+
+  CREATE OR REPLACE VIEW INDICATOR_SURGERY_PT AS
   (
   SELECT 
       A.SURGICAL_SPECIALITY AS "Código especialidade cirúrgica"
