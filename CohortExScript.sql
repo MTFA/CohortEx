@@ -3273,15 +3273,55 @@ COMMIT;
 CREATE OR REPLACE VIEW INDICATOR_PATIENT_GENDER AS 
 (
 SELECT 
+        "GENDER"
+      , "QUANTITY"
+      , "PERCENT"
+FROM 
+    (
+      SELECT 
+          B.SEXO_DS AS "GENDER"
+        , COUNT(*)  AS "QUANTITY" 
+        , TRUNC(COUNT(*)*100/(SELECT COUNT(*) FROM FILTER_PATIENT_ENROLLMENT ),2) AS "PERCENT"
+      FROM 
+        FILTER_PATIENT_ENROLLMENT A
+      INNER JOIN 
+        RAW_THS_BAS_SEXO B
+      ON 
+        A.GENDER = B.SEXO_TP_SEXO                                             
+      GROUP BY 
+        B.SEXO_DS 
+
+    UNION 
+
+      SELECT 
+        'Total' as "GENDER"
+      , (SELECT COUNT(*) FROM FILTER_PATIENT_ENROLLMENT ) as "QUANTITY" 
+      , 100.00 AS "PERCENT"
+      FROM 
+        DUAL
+    )
+) ORDER BY 
+    CASE 
+       WHEN "GENDER" = 'MASCULINO'  THEN '001' 
+       WHEN "GENDER" = 'FEMININO'   THEN '002' 
+       WHEN "GENDER" = 'INDEFINIDO' THEN '003' 
+       WHEN "GENDER" = 'OUTROS'     THEN '004' 
+       ELSE "GENDER"
+    END
+;
+
+CREATE OR REPLACE VIEW INDICATOR_PATIENT_GENDER_PT AS 
+(
+SELECT 
         "Género"
-      , "Paciente"
-      , "Percentual(%)"
+      , "Quantidade"
+      , "Percentual"
 FROM 
     (
       SELECT 
           B.SEXO_DS AS "Género"
-        , COUNT(*)  AS "Paciente" 
-        , TRUNC(COUNT(*)*100/(SELECT COUNT(*) FROM FILTER_PATIENT_ENROLLMENT ),2) AS "Percentual(%)"
+        , COUNT(*)  AS "Quantidade" 
+        , TRUNC(COUNT(*)*100/(SELECT COUNT(*) FROM FILTER_PATIENT_ENROLLMENT ),2) AS "Percentual"
       FROM 
         FILTER_PATIENT_ENROLLMENT A
       INNER JOIN 
@@ -3295,15 +3335,17 @@ FROM
 
       SELECT 
         'Total' as "Género"
-      , (SELECT COUNT(*) FROM FILTER_PATIENT_ENROLLMENT ) as "Paciente" 
-      , 100.00 AS "Percentual(%)"
+      , (SELECT COUNT(*) FROM FILTER_PATIENT_ENROLLMENT ) as "Quantidade" 
+      , 100.00 AS "Percentual"
       FROM 
         DUAL
     )
 ) ORDER BY 
     CASE 
-       WHEN "Género" = 'MASCULINO' THEN '001' 
-       WHEN "Género" = 'FEMININO'  THEN '002' 
+       WHEN "Género" = 'MASCULINO'  THEN '001' 
+       WHEN "Género" = 'FEMININO'   THEN '002' 
+       WHEN "Género" = 'INDEFINIDO' THEN '003' 
+       WHEN "Género" = 'OUTROS'     THEN '004' 
        ELSE "Género"
     END
 ;
