@@ -1,6 +1,14 @@
 #  Pauá External Model and CohortEx:  
 
 Paúa (means large in extension, broad, in Tupí-Guaraní) is an external model upon which the Electronic Health Record system logical model can be mapped to extract data and statistically analize it with R.
+
+Studies are defined by parameters stored as insert statements on a sql script that creates a parameter table. 
+This script is stored in a versioned repository (Github) and run before the cohort selection script. 
+A user friendly serverless tool that runs on a browser as an html page (gh-pages branch of the same Github repository) and edits a json version of the parameters that define the selected cohort that are converted to insert statements and stored on the repository, as a new version of the parameters table. 
+Shiny will be a nice addition to make the same edition of parameters for the R scripts. Both scripts  (sql and R) are intended to be run by a simple Continuous Integration (CI) Server (like Jenkins) behind the institution, triggered by a request of a researcher, that forked the original repository and stated on it his study parameters, sending the repository address and version number. 
+The CI Server peaks the scripts from the repository and runs over the HER database returning the results to the email of the sender. This way we ensure a repeatable process and references to the original work with means it is easy to check modifications made to the original scripts. 
+Even more, as collaboration evolves, changes can be pushed to the original repository to enhance studies. We have limited resources (time and man power) to put everything on place right now, but we are committed to do so and really understand that this way we are paving our road to a better understanding of large solutions as OMOP model which is indeed the right way to go.
+
 Pauá external model is described in detail in [Tereza] paper.  
 Here you find the following files:  
   - CohortExScript.sql  
