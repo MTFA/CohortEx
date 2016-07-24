@@ -510,7 +510,17 @@ END;
 /
 -- **********************************************
 BEGIN
-     EXECUTE IMMEDIATE 'DROP VIEW INDICATOR_ADMISSION_GENDER';
+     EXECUTE IMMEDIATE 'DROP VIEW INDICATOR_ENCOUNTER_GENDER';
+EXCEPTION
+     WHEN OTHERS THEN
+            IF SQLCODE != -942 THEN
+                 RAISE;
+            END IF;
+END;
+/
+-- **********************************************
+BEGIN
+     EXECUTE IMMEDIATE 'DROP VIEW INDICATOR_ENCOUNTER_GENDER_PT';
 EXCEPTION
      WHEN OTHERS THEN
             IF SQLCODE != -942 THEN
@@ -3381,7 +3391,51 @@ FROM
 ;
 
 -- ******************************************************
-CREATE OR REPLACE VIEW INDICATOR_ADMISSION_GENDER AS 
+CREATE OR REPLACE VIEW INDICATOR_ENCOUNTER_GENDER AS 
+(
+SELECT 
+        "GENDER"
+      , "PATIENT_WITH_ENCOUNTER"
+      , "PERCENT"
+FROM 
+    (
+      SELECT 
+          C.SEXO_DS AS "GENDER"
+        , COUNT(DISTINCT (A.PATIENT_ID))  AS "PATIENT_WITH_ENCOUNTER" 
+        , TRUNC((COUNT(DISTINCT (A.PATIENT_ID)) * 100 / (SELECT COUNT(DISTINCT (PATIENT_ID)) FROM FILTER_ADM_DISCH_ENROLLMENT )),2) AS "PERCENT"
+      FROM 
+        FILTER_ADM_DISCH_ENROLLMENT A
+      INNER JOIN
+        FILTER_PATIENT_ENROLLMENT B
+      ON
+        A.PATIENT_ID = B.PATIENT_ID
+      INNER JOIN 
+        RAW_THS_BAS_SEXO C
+      ON 
+        B.GENDER = C.SEXO_TP_SEXO                                             
+      GROUP BY 
+        C.SEXO_DS 
+
+    UNION 
+
+      SELECT 
+        'Total' as "GENDER"
+      , (SELECT COUNT(DISTINCT (PATIENT_ID)) FROM FILTER_ADM_DISCH_ENROLLMENT ) as "PATIENT_WITH_ENCOUNTER" 
+      , 100.00
+      FROM 
+        DUAL
+    )
+) ORDER BY 
+    CASE 
+       WHEN "GENDER" = 'MASCULINO' THEN '001' 
+       WHEN "GENDER" = 'FEMININO'  THEN '002' 
+       ELSE "GENDER"
+    END
+;
+
+
+-- **********************************************
+CREATE OR REPLACE VIEW INDICATOR_ENCOUNTER_GENDER_PT AS 
 (
 SELECT 
         "Género"
