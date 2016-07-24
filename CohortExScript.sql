@@ -3386,13 +3386,13 @@ CREATE OR REPLACE VIEW INDICATOR_ADMISSION_GENDER AS
 SELECT 
         "Género"
       , "Paciente com admissão"
-      , "Percentual(%)"
+      , "Percentual"
 FROM 
     (
       SELECT 
           C.SEXO_DS AS "Género"
         , COUNT(DISTINCT (A.PATIENT_ID))  AS "Paciente com admissão" 
-        , TRUNC((COUNT(DISTINCT (A.PATIENT_ID)) * 100 / (SELECT COUNT(DISTINCT (PATIENT_ID)) FROM FILTER_ADM_DISCH_ENROLLMENT )),2) AS "Percentual(%)"
+        , TRUNC((COUNT(DISTINCT (A.PATIENT_ID)) * 100 / (SELECT COUNT(DISTINCT (PATIENT_ID)) FROM FILTER_ADM_DISCH_ENROLLMENT )),2) AS "Percentual"
       FROM 
         FILTER_ADM_DISCH_ENROLLMENT A
       INNER JOIN
@@ -3439,7 +3439,7 @@ FROM
                 , "ICD10_CHAPTER"
                 , "DESCRIPTION"
                 , count(*) as "QUANTITY"
-                , TRUNC(count(*) * 100/(select count(*) from FILTER_DIAGNOSIS_ENROLLMENT),2) AS "PERCENT(%)"
+                , TRUNC(count(*) * 100/(select count(*) from FILTER_DIAGNOSIS_ENROLLMENT),2) AS "PERCENT"
         FROM 
                 (
                 SELECT 
@@ -3558,7 +3558,7 @@ FROM
                 , "Capítulo CID"
                 , "Descrição"
                 , count(*) as "Quantidade"
-                , TRUNC(count(*) * 100/(select count(*) from FILTER_DIAGNOSIS_ENROLLMENT),2) AS "Percentual(%)"
+                , TRUNC(count(*) * 100/(select count(*) from FILTER_DIAGNOSIS_ENROLLMENT),2) AS "Percentual"
         FROM 
                 (
                 SELECT 
