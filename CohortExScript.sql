@@ -318,7 +318,7 @@ END;
 /
 
 BEGIN
-   EXECUTE IMMEDIATE 'DROP VIEW COHORT_OVERALL_POPULATION';
+   EXECUTE IMMEDIATE 'DROP VIEW COHORT_OVERALL_DBPOP_GENDER';
 EXCEPTION
    WHEN OTHERS THEN
       IF SQLCODE != -942 THEN
@@ -3761,21 +3761,21 @@ CREATE OR REPLACE VIEW INDICATOR_SURGERY AS
             WHEN SURGICAL_SPECIALITY = 'TNCA' THEN 'Thoracic Surgery'
             WHEN SURGICAL_SPECIALITY = 'CVAS' THEN 'Vascular Surgery'
             WHEN SURGICAL_SPECIALITY = 'CCAG' THEN 'Cardiac Surgery'
-            WHEN SURGICAL_SPECIALITY = 'CSEP' THEN 'SEPACO'
-            WHEN SURGICAL_SPECIALITY = 'COVA' THEN 'Coronary/Valve'
-            WHEN SURGICAL_SPECIALITY = 'CNPQ' THEN 'Neuropsychiatric Surgery'
-            WHEN SURGICAL_SPECIALITY = 'CPLA' THEN 'Plastic Surgery'
-            WHEN SURGICAL_SPECIALITY = 'CURO' THEN 'Urology Surgery'
-            WHEN SURGICAL_SPECIALITY = 'CICP' THEN 'Oral and Maxillofacial Surgery'
-            WHEN SURGICAL_SPECIALITY = 'TGER' THEN 'Thoracic Surgery'
-            WHEN SURGICAL_SPECIALITY = 'CODO' THEN 'Dental Surgery'
-            WHEN SURGICAL_SPECIALITY = 'COTO' THEN 'Otolaryngologic Surgery'
-            WHEN SURGICAL_SPECIALITY = 'COBS' THEN 'Obstetric Surgery'
-            WHEN SURGICAL_SPECIALITY = 'TRA2' THEN 'Otolaryngologic Surgery more than 12yo'
-            WHEN SURGICAL_SPECIALITY = 'CORT' THEN 'Orthopaedic Surgery'
-            WHEN SURGICAL_SPECIALITY = 'CGIN' THEN 'Obstetrics and Gynecology Surgery'
-            WHEN SURGICAL_SPECIALITY = 'CTX'  THEN 'Transplant'
-            WHEN SURGICAL_SPECIALITY = 'NECI' THEN 'Neurological Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'CSEP' THEN 'SEPACO'
+--            WHEN SURGICAL_SPECIALITY = 'COVA' THEN 'Coronary/Valve'
+--            WHEN SURGICAL_SPECIALITY = 'CNPQ' THEN 'Neuropsychiatric Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'CPLA' THEN 'Plastic Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'CURO' THEN 'Urology Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'CICP' THEN 'Oral and Maxillofacial Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'TGER' THEN 'General Thoracic Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'CODO' THEN 'Dental Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'COTO' THEN 'Otolaryngologic Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'COBS' THEN 'Obstetric Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'TRA2' THEN 'Otolaryngologic Surgery more than 12yo'
+--            WHEN SURGICAL_SPECIALITY = 'CORT' THEN 'Orthopaedic Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'CGIN' THEN 'Obstetrics and Gynecology Surgery'
+--            WHEN SURGICAL_SPECIALITY = 'CTX'  THEN 'Transplant'
+--            WHEN SURGICAL_SPECIALITY = 'NECI' THEN 'Neurological Surgery'
             ELSE 'OTHERS' END
             )                   AS "DESCRIPTION"
         , count(*)              AS "SURGERIES_QUANTITY"
@@ -7351,16 +7351,29 @@ CREATE INDEX SOPPATID  ON STUDY_OVERALL_POPULATION (PATIENT_ID) /* tablespace in
 
 COMMIT;
 -- ******************************************************
-CREATE OR REPLACE VIEW COHORT_OVERALL_POPULATION AS
+CREATE OR REPLACE VIEW COHORT_OVERALL_DBPOP_GENDER AS
 (
   SELECT 
-      DEIDENTIFIED_ID
-    , GENDER
-    , AGE_AT_STUDY_BEGIN
-    , AGE_AT_STUDY_END
+        'OVERALL' AS POPULATION
+      , GENDER
+      , TRUNC(COUNT(GENDER) * 100 / (SELECT COUNT(*) FROM STUDY_OVERALL_POPULATION)) AS PERCENT
+      , COUNT(GENDER) AS TOTAL 
   FROM 
-    STUDY_OVERALL_POPULATION
+    STUDY_OVERALL_POPULATION 
+  GROUP BY 
+    GENDER
+  UNION
+  SELECT 
+        'STUDY'  as POPULATION
+      , GENDER
+      , TRUNC(COUNT (GENDER) * 100 / (SELECT COUNT(*) AS PERCENT FROM COHORT_PATIENT)) AS PERCENT
+      , COUNT(GENDER) AS TOTAL 
+  FROM 
+    COHORT_PATIENT 
+  GROUP BY 
+    GENDER
 );
+
 -- ******************************************************
 CREATE OR REPLACE VIEW COHORT_ENCOUNTER AS
 (
