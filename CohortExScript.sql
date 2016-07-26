@@ -327,6 +327,16 @@ EXCEPTION
 END;
 /
 
+BEGIN
+   EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW COHORT_SURVIVAL';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -12003 THEN
+         RAISE;
+      END IF;
+END;
+/
+
 --------------------------------------------------------
 --  DROP ALL DETECTORS VIEWS
 --------------------------------------------------------
@@ -792,6 +802,26 @@ END;
 /
 
 BEGIN
+   EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW FILTER_DRUGS_ENROLLMENT';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -12003 THEN
+         RAISE;
+      END IF;
+END;
+/
+
+BEGIN
+   EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW SELECTED_DRUGS';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -12003 THEN
+         RAISE;
+      END IF;
+END;
+/
+
+BEGIN
    EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW FILTER_DIAGNOSIS_ENROLLMENT';
 EXCEPTION
    WHEN OTHERS THEN
@@ -853,6 +883,16 @@ END;
 
 BEGIN
    EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW FILTER_HEARTRISKF_ENROLLMENT';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -12003 THEN
+         RAISE;
+      END IF;
+END;
+/
+
+BEGIN
+   EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW FILTER_DEATH_ENROLLMENT';
 EXCEPTION
    WHEN OTHERS THEN
       IF SQLCODE != -12003 THEN
@@ -2907,6 +2947,78 @@ CREATE MATERIALIZED VIEW FILTER_HEARTRISKF_ENROLLMENT AS
 );
 
 -- **********************************************
+CREATE MATERIALIZED VIEW FILTER_DEATH_ENROLLMENT AS
+(
+  SELECT * 
+  FROM
+    ES_DEATH
+  WHERE
+    (
+      (
+        -- INCLUDE FILTER (ENABLE)
+        (
+          'Y' IN (SELECT PARAMETER_VALUE 
+          FROM CURRENT_RUN_YESNO_PARAMS 
+          WHERE 
+              CRITERIA_ID = 'MIN_ADMISSION' 
+          AND PARAMETER_TYPE = 'FILTER_ENABLING'
+          )
+        )
+      AND
+        (
+          DEATH_DATE >= (SELECT MAX (PARAMETER_VALUE) 
+          FROM CURRENT_RUN_DATE_PARAMS 
+          WHERE 
+              CRITERIA_ID = 'MIN_ADMISSION' 
+          AND PARAMETER_TYPE = 'ADMISSION_INTERVAL'
+          )
+        ) 
+      OR
+        -- EXCLUDE FILTER (DISABLE)
+        (
+          'N' IN (SELECT PARAMETER_VALUE 
+          FROM CURRENT_RUN_YESNO_PARAMS 
+          WHERE 
+              CRITERIA_ID = 'MIN_ADMISSION' 
+          AND PARAMETER_TYPE = 'FILTER_ENABLING'
+          )
+        )
+      )
+      AND
+      (
+        -- INCLUDE FILTER (ENABLE)
+        (
+          'Y' IN (SELECT PARAMETER_VALUE 
+          FROM CURRENT_RUN_YESNO_PARAMS 
+          WHERE 
+              CRITERIA_ID = 'MAX_ADMISSION' 
+          AND PARAMETER_TYPE = 'FILTER_ENABLING'
+          )
+        )
+      AND
+        (
+          DEATH_DATE < (SELECT MAX (PARAMETER_VALUE) 
+          FROM CURRENT_RUN_DATE_PARAMS 
+          WHERE 
+              CRITERIA_ID = 'MAX_ADMISSION' 
+          AND PARAMETER_TYPE = 'ADMISSION_INTERVAL'
+          )
+        )
+      OR
+        -- EXCLUDE FILTER (DISABLE)
+        (
+          'N' IN (SELECT PARAMETER_VALUE 
+          FROM CURRENT_RUN_YESNO_PARAMS 
+          WHERE 
+              CRITERIA_ID = 'MAX_ADMISSION' 
+          AND PARAMETER_TYPE = 'FILTER_ENABLING'
+          )
+        )
+      )
+    )
+);
+
+-- **********************************************
 CREATE MATERIALIZED VIEW FILTER_DRUGS_ENROLLMENT AS
 (
   SELECT * 
@@ -3079,7 +3191,7 @@ AS
         SELECT   PATIENT_ID
             , COUNT(*) QTY 
         FROM 
-          ES_DEATH
+          FILTER_DEATH_ENROLLMENT
         GROUP BY 
           PATIENT_ID
     )
@@ -3092,13 +3204,13 @@ CREATE OR REPLACE VIEW VALID_DEATH AS
   SELECT 
     A.* 
   FROM 
-    ES_DEATH A
+    FILTER_DEATH_ENROLLMENT A
   INNER JOIN 
     (
       SELECT 
         PATIENT_ID
       FROM 
-        ES_DEATH
+        FILTER_DEATH_ENROLLMENT
       MINUS 
       SELECT 
         PATIENT_ID 
@@ -7653,4 +7765,55 @@ INNER JOIN
 ON
   TTS.PATIENT_ID = SP.PATIENT_ID
 );
+
+CREATE VIEW COHORT_SURVIVAL AS
+(
+SELECT 
+          DEIDENTIFIED_ID
+        , DEATH_FLAG
+        , AGE_AT_DEATH
+        , AGE_AT_STUDY_END
+        , AGE_LAST_ENCOUNTER
+        ,AGE_AT_INDEX_EVENT
+        , INTERVENTION_FLAG
+        , CASE 
+            WHEN (AGE_AT_DEATH IS NOT NULL AND  AGE_AT_DEATH < AGE_AT_STUDY_END) THEN AGE_AT_DEATH 
+            ELSE 
+              CASE 
+                WHEN (AGE_LAST_ENCOUNTER < AGE_AT_STUDY_END) THEN AGE_LAST_ENCOUNTER 
+                ELSE AGE_AT_STUDY_END 
+              END
+          END - AGE_AT_INDEX_EVENT
+              AS SURVIVAL_INTERVAL
+        FROM (
+                SELECT 
+                          A.DEIDENTIFIED_ID
+                        , A.AGE_AT_INDEX_EVENT
+                        , A.DEATH_FLAG
+                        , B.INTERVENTION_FLAG
+                        , C.AGE_AT_DEATH
+                        , D.AGE_LAST_ENCOUNTER
+                        , ((E.ESTIM_AGE_AT_STUDY_END + 1 ) * 365) AS AGE_AT_STUDY_END
+                        
+                FROM
+                  COHORT_INDEXEVENT_OUTCOMEEVENT A
+                INNER JOIN
+                  COHORT_INTERVENTION B
+                ON
+                A.DEIDENTIFIED_ID = B.DEIDENTIFIED_ID
+                LEFT OUTER JOIN
+                  COHORT_DEATH C
+                ON
+                A.DEIDENTIFIED_ID = C.DEIDENTIFIED_ID
+                INNER JOIN
+                  COHORT_ENCOUNTER D
+                ON
+                A.DEIDENTIFIED_ID = D.DEIDENTIFIED_ID
+                INNER JOIN
+                  COHORT_PATIENT E
+                ON
+                A.DEIDENTIFIED_ID = E.DEIDENTIFIED_ID
+          )
+);
+
 
