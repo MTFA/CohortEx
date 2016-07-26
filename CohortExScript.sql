@@ -1277,6 +1277,16 @@ EXCEPTION
 END;
 /
 
+BEGIN
+   EXECUTE IMMEDIATE 'DROP VIEW COHORT_DRUGS_DETAIL';
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN
+         RAISE;
+      END IF;
+END;
+/
+
 --------------------------------------------------------
 --
 --
@@ -6903,6 +6913,86 @@ CREATE MATERIALIZED VIEW AUX_ENCOUNTERS AS
 
 CREATE INDEX AUXE_PATID ON AUX_ENCOUNTERS(PATIENT_ID) /* tablespace index placeholder */ ;
 
+-- **********************************************
+
+COMMIT;
+
+-- ******************************************************
+-- MVIEW xx - TRANSFORM_FIRSTLAST_ENCOUNTER
+--
+
+CREATE MATERIALIZED VIEW TRANSFORM_FIRSTLAST_ENCOUNTER
+AS
+(
+  SELECT 
+      PATIENT_ID
+    , COUNT(PATIENT_ID)     AS ENCOUNTER_CNT
+    , MIN(ADMISSION_DATE)   AS FIRST_ENCOUNTER_DATE 
+    , MAX(ADMISSION_DATE)   AS LAST_ENCOUNTER_DATE 
+  FROM 
+    BP_ADMISSION_DISCHARGE
+  GROUP BY 
+    PATIENT_ID
+);
+
+CREATE INDEX TFE_PATID  ON TRANSFORM_FIRSTLAST_ENCOUNTER (PATIENT_ID) /* tablespace index placeholder */ ;
+
+COMMIT;
+-- ******************************************************
+CREATE OR REPLACE VIEW COHORT_SELECTOR_FSTLST_ENCNTR
+AS
+(
+  SELECT 
+        * 
+  FROM 
+    TRANSFORM_FIRSTLAST_ENCOUNTER
+  WHERE 
+   (
+      -- INCLUDE FILTER (ENABLE)
+      (
+        'Y' IN (SELECT PARAMETER_VALUE 
+        FROM CURRENT_RUN_YESNO_PARAMS 
+        WHERE 
+            CRITERIA_ID = 'DIAGNOSIS_DATE_ON_STUDY_INTERVAL' 
+        AND PARAMETER_TYPE = 'FILTER_ENABLING'
+        )
+      )
+    AND
+      (
+      -- FILTER SELECTED GENDERS
+      FIRST_ENCOUNTER_DATE    >=   (SELECT MAX (PARAMETER_VALUE) 
+                            FROM CURRENT_RUN_DATE_PARAMS 
+                            WHERE 
+                                CRITERIA_ID = 'STUDY_BEGIN' 
+                            AND PARAMETER_TYPE = 'INTERVAL_DATE'
+                            )
+      )
+    AND
+      (
+      -- FILTER SELECTED GENDERS
+      FIRST_ENCOUNTER_DATE    <   (SELECT MAX (PARAMETER_VALUE) 
+                            FROM CURRENT_RUN_DATE_PARAMS 
+                            WHERE 
+                                CRITERIA_ID = 'STUDY_END' 
+                            AND PARAMETER_TYPE = 'INTERVAL_DATE'
+                            )
+      )
+    OR
+      -- EXCLUDE FILTER (DISABLE)
+    (
+          'N' IN (SELECT PARAMETER_VALUE 
+          FROM CURRENT_RUN_YESNO_PARAMS 
+          WHERE 
+              CRITERIA_ID = 'DIAGNOSIS_DATE_ON_STUDY_INTERVAL' 
+          AND PARAMETER_TYPE = 'FILTER_ENABLING'
+          )
+    )
+  )
+);
+-- ******************************************************
+
+COMMIT;
+
 -- ******************************************************
 
 CREATE MATERIALIZED VIEW COHORT_SELECTOR_ENCOUNTERS AS
@@ -6944,10 +7034,6 @@ CREATE MATERIALIZED VIEW COHORT_SELECTOR_ENCOUNTERS AS
 /
 
 CREATE INDEX CSE_PATID ON COHORT_SELECTOR_ENCOUNTERS(PATIENT_ID) /* tablespace index placeholder */ ;
-
-COMMIT;
-
--- **********************************************
 
 COMMIT;
 
@@ -7100,82 +7186,6 @@ ON
 );
 -- ******************************************************
 -- ******************************************************
--- ******************************************************
--- MVIEW xx - TRANSFORM_FIRSTLAST_ENCOUNTER
---
-
-CREATE MATERIALIZED VIEW TRANSFORM_FIRSTLAST_ENCOUNTER
-AS
-(
-  SELECT 
-      PATIENT_ID
-    , COUNT(PATIENT_ID)     AS ENCOUNTER_CNT
-    , MIN(ADMISSION_DATE)   AS FIRST_ENCOUNTER_DATE 
-    , MAX(ADMISSION_DATE)   AS LAST_ENCOUNTER_DATE 
-  FROM 
-    BP_ADMISSION_DISCHARGE
-  GROUP BY 
-    PATIENT_ID
-);
-
-CREATE INDEX TFE_PATID  ON TRANSFORM_FIRSTLAST_ENCOUNTER (PATIENT_ID) /* tablespace index placeholder */ ;
-
-COMMIT;
--- ******************************************************
-CREATE OR REPLACE VIEW COHORT_SELECTOR_FSTLST_ENCNTR
-AS
-(
-  SELECT 
-        * 
-  FROM 
-    TRANSFORM_FIRSTLAST_ENCOUNTER
-  WHERE 
-   (
-      -- INCLUDE FILTER (ENABLE)
-      (
-        'Y' IN (SELECT PARAMETER_VALUE 
-        FROM CURRENT_RUN_YESNO_PARAMS 
-        WHERE 
-            CRITERIA_ID = 'DIAGNOSIS_DATE_ON_STUDY_INTERVAL' 
-        AND PARAMETER_TYPE = 'FILTER_ENABLING'
-        )
-      )
-    AND
-      (
-      -- FILTER SELECTED GENDERS
-      FIRST_ENCOUNTER_DATE    >=   (SELECT MAX (PARAMETER_VALUE) 
-                            FROM CURRENT_RUN_DATE_PARAMS 
-                            WHERE 
-                                CRITERIA_ID = 'STUDY_BEGIN' 
-                            AND PARAMETER_TYPE = 'INTERVAL_DATE'
-                            )
-      )
-    AND
-      (
-      -- FILTER SELECTED GENDERS
-      FIRST_ENCOUNTER_DATE    <   (SELECT MAX (PARAMETER_VALUE) 
-                            FROM CURRENT_RUN_DATE_PARAMS 
-                            WHERE 
-                                CRITERIA_ID = 'STUDY_END' 
-                            AND PARAMETER_TYPE = 'INTERVAL_DATE'
-                            )
-      )
-    OR
-      -- EXCLUDE FILTER (DISABLE)
-    (
-          'N' IN (SELECT PARAMETER_VALUE 
-          FROM CURRENT_RUN_YESNO_PARAMS 
-          WHERE 
-              CRITERIA_ID = 'DIAGNOSIS_DATE_ON_STUDY_INTERVAL' 
-          AND PARAMETER_TYPE = 'FILTER_ENABLING'
-          )
-    )
-  )
-);
--- ******************************************************
-
-COMMIT;
-
 -- ******************************************************
 -- MVIEW xx - INPATIENT_COUNT
 --
@@ -7367,30 +7377,6 @@ CREATE INDEX SOPPATID  ON STUDY_OVERALL_POPULATION (PATIENT_ID) /* tablespace in
 
 COMMIT;
 -- ******************************************************
-CREATE OR REPLACE VIEW COHORT_OVERALL_DBPOP_GENDER AS
-(
-  SELECT 
-        'OVERALL' AS POPULATION
-      , GENDER
-      , TRUNC(COUNT(GENDER) * 100 / (SELECT COUNT(*) FROM STUDY_OVERALL_POPULATION)) AS PERCENT
-      , COUNT(GENDER) AS TOTAL 
-  FROM 
-    STUDY_OVERALL_POPULATION 
-  GROUP BY 
-    GENDER
-  UNION
-  SELECT 
-        'STUDY'  as POPULATION
-      , GENDER
-      , TRUNC(COUNT (GENDER) * 100 / (SELECT COUNT(*) AS PERCENT FROM COHORT_PATIENT)) AS PERCENT
-      , COUNT(GENDER) AS TOTAL 
-  FROM 
-    COHORT_PATIENT 
-  GROUP BY 
-    GENDER
-);
-
--- ******************************************************
 CREATE OR REPLACE VIEW COHORT_ENCOUNTER AS
 (
 SELECT 
@@ -7517,6 +7503,30 @@ INNER JOIN
   SELECTED_PATIENT SP
 ON 
   BPP.DEIDENTIFIED_ID = SP.DEIDENTIFIED_ID
+);
+
+-- ******************************************************
+CREATE OR REPLACE VIEW COHORT_OVERALL_DBPOP_GENDER AS
+(
+  SELECT 
+        'OVERALL' AS POPULATION
+      , GENDER
+      , TRUNC(COUNT(GENDER) * 100 / (SELECT COUNT(*) FROM STUDY_OVERALL_POPULATION)) AS PERCENT
+      , COUNT(GENDER) AS TOTAL 
+  FROM 
+    STUDY_OVERALL_POPULATION 
+  GROUP BY 
+    GENDER
+  UNION
+  SELECT 
+        'STUDY'  as POPULATION
+      , GENDER
+      , TRUNC(COUNT (GENDER) * 100 / (SELECT COUNT(*) AS PERCENT FROM COHORT_PATIENT)) AS PERCENT
+      , COUNT(GENDER) AS TOTAL 
+  FROM 
+    COHORT_PATIENT 
+  GROUP BY 
+    GENDER
 );
 
 -- ******************************************************
