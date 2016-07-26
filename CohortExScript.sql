@@ -4495,7 +4495,8 @@ CREATE MATERIALIZED VIEW COHORT_SELECTOR_DIAGNOSIS
 AS
 (
   SELECT 
-        DISTINCT PATIENT_ID
+          PATIENT_ID              AS PATIENT_ID
+        , MIN(DIAGNOSIS_ID)       AS DIAGNOSIS_ID
   FROM 
         COHORT_SELECTOR_STUDY_INTERVAL
   WHERE
@@ -4622,9 +4623,12 @@ AS
          ) 
             
     )
-    union 
+  GROUP BY
+    PATIENT_ID
+  UNION 
   SELECT 
-        DISTINCT PATIENT_ID
+      PATIENT_ID          AS PATIENT_ID
+    , MIN(DIAGNOSIS_ID)   AS DIAGNOSIS_ID
   FROM 
     COHORT_SELECTOR_STUDY_INTERVAL
   WHERE 
@@ -4638,6 +4642,8 @@ AS
             )
           )
     )
+  GROUP BY
+    PATIENT_ID
 );
 
 CREATE INDEX CSDPATID  ON COHORT_SELECTOR_DIAGNOSIS (PATIENT_ID) /* tablespace index placeholder */ ;
@@ -4650,175 +4656,19 @@ CREATE MATERIALIZED VIEW TRANSFORM_INDEX_FSTDIAGNOSIS
 AS
 (
   SELECT 
-          PATIENT_ID
-        , DIAGNOSIS_ID
-        , ICD10
-        , SUBSTR(ICD10,1,3) AS ICD10_CATEGORY
-        , DIAGNOSIS_DATE
+          CSSI.PATIENT_ID        AS PATIENT_ID
+        , CSSI.DIAGNOSIS_ID      AS DIAGNOSIS_ID
+        , CSSI.ICD10             AS ICD10
+        , SUBSTR(CSSI.ICD10,1,3) AS ICD10_CATEGORY
+        , CSSI.DIAGNOSIS_DATE    AS DIAGNOSIS_DATE
   FROM 
-        COHORT_SELECTOR_STUDY_INTERVAL
-  WHERE
-    (
-          (
-            'Y' = (SELECT PARAMETER_VALUE 
-            FROM CURRENT_RUN_YESNO_PARAMS 
-            WHERE 
-                CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-            AND PARAMETER_TYPE = 'FILTER_ENABLING'
-            )
-          )
-        AND
-        (PATIENT_ID,DIAGNOSIS_ID) IN
-          --- INCLUSION DIAGNOSTICS
-          (
-            SELECT
-                PATIENT_ID
-              , MIN(DIAGNOSIS_ID)
-            FROM
-              COHORT_SELECTOR_STUDY_INTERVAL
-            WHERE
-              (
-              --- PARTIAL CATEGORY (JUST EXACT 3 CHARS CODES)
-              TRIM(ICD10) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_CATEGORY_PARTIAL'
-                AND INCLUSION_EXCLUSION = 'I'
-                )
-                OR
-              --- FULL CATEGORY (ANY 3 CHARS OR MORE CODES)
-              SUBSTR(ICD10,1,3) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_CATEGORY_FULL'
-                AND INCLUSION_EXCLUSION = 'I'
-                )
-                OR
-              --- SUBCATEGORY (ONLY 5 CHARS CODES)
-              SUBSTR(ICD10,1,5) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_SUBCATEGORY'
-                AND INCLUSION_EXCLUSION = 'I'
-                )
-                OR
-              --- ETIOLOGY AND LOCALIZATION (ONLY 7 CHARS CODES)
-              SUBSTR(ICD10,1,7) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_ETIOLOGY'
-                AND INCLUSION_EXCLUSION = 'I'
-                )
-                OR
-              --- EXTENSION (ONLY 8 CHARS CODES)
-               SUBSTR(ICD10,1,8) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_EXTENSION'
-                AND INCLUSION_EXCLUSION = 'I'
-                )
-             )
-            GROUP BY PATIENT_ID
-          )
-        AND
-        (PATIENT_ID,DIAGNOSIS_ID) NOT IN
-          --- EXCLUSION DIAGNOSTICS
-        (
-            SELECT
-                PATIENT_ID
-              , MIN(DIAGNOSIS_ID)
-            FROM
-              COHORT_SELECTOR_STUDY_INTERVAL
-            WHERE
-              (
-              --- PARTIAL CATEGORY (JUST EXACT 3 CHARS CODES)
-              TRIM(ICD10) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_CATEGORY_PARTIAL'
-                AND INCLUSION_EXCLUSION = 'E'
-                )
-                OR
-              --- FULL CATEGORY (ANY 3 CHARS OR MORE CODES)
-              SUBSTR(ICD10,1,3) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_CATEGORY_FULL'
-                AND INCLUSION_EXCLUSION = 'E'
-                )
-                OR
-              --- SUBCATEGORY (ONLY 5 CHARS CODES)
-              SUBSTR(ICD10,1,5) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_SUBCATEGORY'
-                AND INCLUSION_EXCLUSION = 'E'
-                )
-                OR
-              --- ETIOLOGY AND LOCALIZATION (ONLY 7 CHARS CODES)
-              SUBSTR(ICD10,1,7) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_ETIOLOGY'
-                AND INCLUSION_EXCLUSION = 'E'
-                )
-                OR
-              --- EXTENSION (ONLY 8 CHARS CODES)
-               SUBSTR(ICD10,1,8) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_EXTENSION'
-                AND INCLUSION_EXCLUSION = 'E'
-                )
-             )
-              GROUP BY PATIENT_ID
-         ) 
-            
-    )
-    UNION 
-    SELECT 
-            A.PATIENT_ID        AS PATIENT_ID
-          , A.DIAGNOSIS_ID      AS DIAGNOSIS_ID
-          , A.ICD10             AS ICD10
-          , SUBSTR(A.ICD10,1,3) AS ICD10_CATEGORY
-          , A.DIAGNOSIS_DATE    AS DIAGNOSIS_DATE
-    FROM 
-      COHORT_SELECTOR_STUDY_INTERVAL  A
-    INNER JOIN 
-      (
-        SELECT 
-                PATIENT_ID
-              , MIN(DIAGNOSIS_ID) AS DIAGNOSIS_ID
-        FROM 
-          COHORT_SELECTOR_STUDY_INTERVAL
-        GROUP BY 
-          PATIENT_ID
-      ) B
-    ON 
-          A.PATIENT_ID = B.PATIENT_ID 
-      AND A.DIAGNOSIS_ID = B.DIAGNOSIS_ID
-    WHERE 
-      (
-            (
-              'N' = (SELECT PARAMETER_VALUE 
-              FROM CURRENT_RUN_YESNO_PARAMS 
-              WHERE 
-                  CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-              AND PARAMETER_TYPE = 'FILTER_ENABLING'
-              )
-            )
-      )
-);
+        COHORT_SELECTOR_STUDY_INTERVAL CSSI
+  INNER JOIN
+        COHORT_SELECTOR_DIAGNOSIS CSD
+  ON
+            CSSI.PATIENT_ID = CSD.PATIENT_ID
+        AND CSSI.DIAGNOSIS_ID = CSD.DIAGNOSIS_ID
+ );
 
 CREATE INDEX TIFPATID  ON TRANSFORM_INDEX_FSTDIAGNOSIS (PATIENT_ID) /* tablespace index placeholder */ ;
 
