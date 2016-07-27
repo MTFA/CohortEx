@@ -3352,7 +3352,8 @@ CREATE OR REPLACE VIEW DETECT_INVALID_ICD10_STRICT AS
   FROM 
     FILTER_DIAGNOSIS_ENROLLMENT 
   WHERE 
-    NOT REGEXP_LIKE(ICD10,'^[a-tA-Tv-zV-Z][0-9][a-zA-Z0-9]\.[a-zA-Z0-9]([a-zA-Z0-9]{1,3})?$')
+        ICD10 IS NULL
+    OR  NOT REGEXP_LIKE(ICD10,'^[a-tA-Tv-zV-Z][0-9][a-zA-Z0-9]\.[a-zA-Z0-9]([a-zA-Z0-9]{1,3})?$')
 );
 
 -- ******************************************************
@@ -3365,7 +3366,8 @@ CREATE OR REPLACE VIEW DETECT_INVALID_ICD10_RELAX AS
   FROM 
     FILTER_DIAGNOSIS_ENROLLMENT 
   WHERE 
-    NOT REGEXP_LIKE(ICD10,'^[a-tA-Tv-zV-Z][0-9][a-zA-Z0-9](\.[a-zA-Z0-9]{0,4})?$')
+        ICD10 IS NULL
+    OR  NOT REGEXP_LIKE(ICD10,'^[a-tA-Tv-zV-Z][0-9][a-zA-Z0-9](\.[a-zA-Z0-9]{0,4})?$')
 ); 
 
 -- ******************************************************
@@ -4617,156 +4619,166 @@ CREATE MATERIALIZED VIEW COHORT_SELECTOR_DIAGNOSIS
 AS
 (
   SELECT 
-          PATIENT_ID              AS PATIENT_ID
-        , MIN(DIAGNOSIS_ID)       AS DIAGNOSIS_ID
-  FROM 
-        COHORT_SELECTOR_STUDY_INTERVAL
-  WHERE
+    * 
+  FROM  
+    COHORT_SELECTOR_STUDY_INTERVAL A
+INNER JOIN 
     (
-          (
-            'Y' = (SELECT PARAMETER_VALUE 
-            FROM CURRENT_RUN_YESNO_PARAMS 
-            WHERE 
-                CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-            AND PARAMETER_TYPE = 'FILTER_ENABLING'
-            )
-          )
-        AND
-        PATIENT_ID IN
-          --- INCLUSION DIAGNOSTICS
-          (
-            SELECT
-              PATIENT_ID
-            FROM
-              COHORT_SELECTOR_STUDY_INTERVAL
-            WHERE
-              (
-              --- PARTIAL CATEGORY (JUST EXACT 3 CHARS CODES)
-              TRIM(ICD10) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_CATEGORY_PARTIAL'
-                AND INCLUSION_EXCLUSION = 'I'
-                )
-                OR
-              --- FULL CATEGORY (ANY 3 CHARS OR MORE CODES)
-              SUBSTR(ICD10,1,3) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_CATEGORY_FULL'
-                AND INCLUSION_EXCLUSION = 'I'
-                )
-                OR
-              --- SUBCATEGORY (ONLY 5 CHARS CODES)
-              SUBSTR(ICD10,1,5) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_SUBCATEGORY'
-                AND INCLUSION_EXCLUSION = 'I'
-                )
-                OR
-              --- ETIOLOGY AND LOCALIZATION (ONLY 7 CHARS CODES)
-              SUBSTR(ICD10,1,7) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_ETIOLOGY'
-                AND INCLUSION_EXCLUSION = 'I'
-                )
-                OR
-              --- EXTENSION (ONLY 8 CHARS CODES)
-               SUBSTR(ICD10,1,8) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_EXTENSION'
-                AND INCLUSION_EXCLUSION = 'I'
-                )
-             )
-          )
-        AND
-        PATIENT_ID NOT IN
-          --- EXCLUSION DIAGNOSTICS
+      SELECT 
+              PATIENT_ID              AS PATIENT_ID
+            , MIN(DIAGNOSIS_ID)       AS DIAGNOSIS_ID
+      FROM 
+            COHORT_SELECTOR_STUDY_INTERVAL
+      WHERE
         (
-            SELECT
-              PATIENT_ID
-            FROM
-              COHORT_SELECTOR_STUDY_INTERVAL
-            WHERE
               (
-              --- PARTIAL CATEGORY (JUST EXACT 3 CHARS CODES)
-              TRIM(ICD10) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
+                'Y' = (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_YESNO_PARAMS 
                 WHERE 
                     CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_CATEGORY_PARTIAL'
-                AND INCLUSION_EXCLUSION = 'E'
+                AND PARAMETER_TYPE = 'FILTER_ENABLING'
                 )
-                OR
-              --- FULL CATEGORY (ANY 3 CHARS OR MORE CODES)
-              SUBSTR(ICD10,1,3) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
+              )
+            AND
+            (PATIENT_ID,DIAGNOSIS_ID) IN
+              --- INCLUSION DIAGNOSTICS
+              (
+                SELECT
+                  PATIENT_ID,DIAGNOSIS_ID
+                FROM
+                  COHORT_SELECTOR_STUDY_INTERVAL
+                WHERE
+                  (
+                  --- PARTIAL CATEGORY (JUST EXACT 3 CHARS CODES)
+                  TRIM(ICD10) IN (SELECT PARAMETER_VALUE 
+                    FROM CURRENT_RUN_STR_PARAMS 
+                    WHERE 
+                        CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                    AND PARAMETER_TYPE = 'ICD10_CATEGORY_PARTIAL'
+                    AND INCLUSION_EXCLUSION = 'I'
+                    )
+                    OR
+                  --- FULL CATEGORY (ANY 3 CHARS OR MORE CODES)
+                  SUBSTR(ICD10,1,3) IN (SELECT PARAMETER_VALUE 
+                    FROM CURRENT_RUN_STR_PARAMS 
+                    WHERE 
+                        CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                    AND PARAMETER_TYPE = 'ICD10_CATEGORY_FULL'
+                    AND INCLUSION_EXCLUSION = 'I'
+                    )
+                    OR
+                  --- SUBCATEGORY (ONLY 5 CHARS CODES)
+                  SUBSTR(ICD10,1,5) IN (SELECT PARAMETER_VALUE 
+                    FROM CURRENT_RUN_STR_PARAMS 
+                    WHERE 
+                        CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                    AND PARAMETER_TYPE = 'ICD10_SUBCATEGORY'
+                    AND INCLUSION_EXCLUSION = 'I'
+                    )
+                    OR
+                  --- ETIOLOGY AND LOCALIZATION (ONLY 7 CHARS CODES)
+                  SUBSTR(ICD10,1,7) IN (SELECT PARAMETER_VALUE 
+                    FROM CURRENT_RUN_STR_PARAMS 
+                    WHERE 
+                        CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                    AND PARAMETER_TYPE = 'ICD10_ETIOLOGY'
+                    AND INCLUSION_EXCLUSION = 'I'
+                    )
+                    OR
+                  --- EXTENSION (ONLY 8 CHARS CODES)
+                   SUBSTR(ICD10,1,8) IN (SELECT PARAMETER_VALUE 
+                    FROM CURRENT_RUN_STR_PARAMS 
+                    WHERE 
+                        CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                    AND PARAMETER_TYPE = 'ICD10_EXTENSION'
+                    AND INCLUSION_EXCLUSION = 'I'
+                    )
+                 )
+              )
+            AND
+            (PATIENT_ID,DIAGNOSIS_ID) NOT IN
+              --- EXCLUSION DIAGNOSTICS
+            (
+                SELECT
+                  PATIENT_ID,DIAGNOSIS_ID
+                FROM
+                  COHORT_SELECTOR_STUDY_INTERVAL
+                WHERE
+                  (
+                  --- PARTIAL CATEGORY (JUST EXACT 3 CHARS CODES)
+                  TRIM(ICD10) IN (SELECT PARAMETER_VALUE 
+                    FROM CURRENT_RUN_STR_PARAMS 
+                    WHERE 
+                        CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                    AND PARAMETER_TYPE = 'ICD10_CATEGORY_PARTIAL'
+                    AND INCLUSION_EXCLUSION = 'E'
+                    )
+                    OR
+                  --- FULL CATEGORY (ANY 3 CHARS OR MORE CODES)
+                  SUBSTR(ICD10,1,3) IN (SELECT PARAMETER_VALUE 
+                    FROM CURRENT_RUN_STR_PARAMS 
+                    WHERE 
+                        CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                    AND PARAMETER_TYPE = 'ICD10_CATEGORY_FULL'
+                    AND INCLUSION_EXCLUSION = 'E'
+                    )
+                    OR
+                  --- SUBCATEGORY (ONLY 5 CHARS CODES)
+                  SUBSTR(ICD10,1,5) IN (SELECT PARAMETER_VALUE 
+                    FROM CURRENT_RUN_STR_PARAMS 
+                    WHERE 
+                        CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                    AND PARAMETER_TYPE = 'ICD10_SUBCATEGORY'
+                    AND INCLUSION_EXCLUSION = 'E'
+                    )
+                    OR
+                  --- ETIOLOGY AND LOCALIZATION (ONLY 7 CHARS CODES)
+                  SUBSTR(ICD10,1,7) IN (SELECT PARAMETER_VALUE 
+                    FROM CURRENT_RUN_STR_PARAMS 
+                    WHERE 
+                        CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                    AND PARAMETER_TYPE = 'ICD10_ETIOLOGY'
+                    AND INCLUSION_EXCLUSION = 'E'
+                    )
+                    OR
+                  --- EXTENSION (ONLY 8 CHARS CODES)
+                   SUBSTR(ICD10,1,8) IN (SELECT PARAMETER_VALUE 
+                    FROM CURRENT_RUN_STR_PARAMS 
+                    WHERE 
+                        CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
+                    AND PARAMETER_TYPE = 'ICD10_EXTENSION'
+                    AND INCLUSION_EXCLUSION = 'E'
+                    )
+                 )
+             ) 
+                
+        )
+      GROUP BY
+        PATIENT_ID
+      UNION 
+      SELECT 
+          PATIENT_ID          AS PATIENT_ID
+        , MIN(DIAGNOSIS_ID)   AS DIAGNOSIS_ID
+      FROM 
+        COHORT_SELECTOR_STUDY_INTERVAL
+      WHERE 
+        (
+              (
+                'N' = (SELECT PARAMETER_VALUE 
+                FROM CURRENT_RUN_YESNO_PARAMS 
                 WHERE 
                     CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_CATEGORY_FULL'
-                AND INCLUSION_EXCLUSION = 'E'
+                AND PARAMETER_TYPE = 'FILTER_ENABLING'
                 )
-                OR
-              --- SUBCATEGORY (ONLY 5 CHARS CODES)
-              SUBSTR(ICD10,1,5) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_SUBCATEGORY'
-                AND INCLUSION_EXCLUSION = 'E'
-                )
-                OR
-              --- ETIOLOGY AND LOCALIZATION (ONLY 7 CHARS CODES)
-              SUBSTR(ICD10,1,7) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_ETIOLOGY'
-                AND INCLUSION_EXCLUSION = 'E'
-                )
-                OR
-              --- EXTENSION (ONLY 8 CHARS CODES)
-               SUBSTR(ICD10,1,8) IN (SELECT PARAMETER_VALUE 
-                FROM CURRENT_RUN_STR_PARAMS 
-                WHERE 
-                    CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-                AND PARAMETER_TYPE = 'ICD10_EXTENSION'
-                AND INCLUSION_EXCLUSION = 'E'
-                )
-             )
-         ) 
-            
-    )
-  GROUP BY
-    PATIENT_ID
-  UNION 
-  SELECT 
-      PATIENT_ID          AS PATIENT_ID
-    , MIN(DIAGNOSIS_ID)   AS DIAGNOSIS_ID
-  FROM 
-    COHORT_SELECTOR_STUDY_INTERVAL
-  WHERE 
-    (
-          (
-            'N' = (SELECT PARAMETER_VALUE 
-            FROM CURRENT_RUN_YESNO_PARAMS 
-            WHERE 
-                CRITERIA_ID = 'DIAGNOSIS_SELECTION' 
-            AND PARAMETER_TYPE = 'FILTER_ENABLING'
-            )
-          )
-    )
-  GROUP BY
-    PATIENT_ID
-);
+              )
+        )
+      GROUP BY
+        PATIENT_ID
+    ) B
+  ON
+        A.PATIENT_ID = B.PATIENT_ID
+    AND A.DIAGNOSIS_ID = B.DIAGNOSIS_ID
+  );
 
 CREATE INDEX CSDPATID  ON COHORT_SELECTOR_DIAGNOSIS (PATIENT_ID) /* tablespace index placeholder */ ;
 
@@ -6861,13 +6873,18 @@ CREATE INDEX BPAD_ADSEC ON BP_ADMISSION_DISCHARGE(ADMISSION_SECTOR) /* tablespac
 CREATE OR REPLACE VIEW PAUA_TOTALS AS
 (
 SELECT 
-    (SELECT COUNT(*) FROM FILTER_PATIENT_ENROLLMENT) AS PATIENTS_TOTAL
-  , (SELECT COUNT (*) FROM VALID_PATIENT) AS WITH_BIRTH_DATE
-  , (SELECT COUNT (*) FROM BP_PATIENT) AS WITHOUT_DUPLICATES
-  , (SELECT COUNT(DISTINCT  A.PATIENT_ID) FROM BP_PATIENT A INNER JOIN FILTER_DIAGNOSIS_ENROLLMENT ON FILTER_DIAGNOSIS_ENROLLMENT.PATIENT_ID = A.PATIENT_ID) AS WITH_DIAGNOSIS
-  , (SELECT COUNT (*) FROM FILTER_DIAGNOSIS_ENROLLMENT) AS DIAGNOSIS_TOTAL
-  , (SELECT COUNT(*) FROM DETECT_INVALID_ICD10_STRICT) AS INVALID_ICD_STRICT
-  , (SELECT COUNT(*) FROM DETECT_INVALID_ICD10_RELAX) AS INVALID_ICD_RELAX
+    (SELECT COUNT(*) FROM FILTER_PATIENT_ENROLLMENT)      AS PATIENTS_TOTAL
+  , (SELECT COUNT (*) FROM VALID_PATIENT)                 AS WITH_BIRTH_DATE
+  , (SELECT COUNT (*) FROM BP_PATIENT)                    AS WITHOUT_DUPLICATES
+  , (SELECT COUNT(DISTINCT  A.PATIENT_ID) 
+            FROM BP_PATIENT A 
+            INNER JOIN FILTER_DIAGNOSIS_ENROLLMENT 
+            ON FILTER_DIAGNOSIS_ENROLLMENT.PATIENT_ID = A.PATIENT_ID
+            )                                             AS WITH_DIAGNOSIS
+  , (SELECT COUNT (*) FROM FILTER_DIAGNOSIS_ENROLLMENT)   AS DIAGNOSIS_TOTAL
+  , (SELECT COUNT(*) FROM DETECT_INVALID_ICD10_STRICT)    AS INVALID_ICD_STRICT
+  , (SELECT COUNT(*) FROM DETECT_INVALID_ICD10_RELAX)     AS INVALID_ICD_RELAX
+  , (SELECT COUNT(*) FROM BP_DIAGNOSIS)                   AS PATIENTS_DIAGNOSIS
   FROM DUAL
 );
 
@@ -6876,13 +6893,18 @@ SELECT
 CREATE OR REPLACE VIEW PAUA_TOTALS_PT AS
 (
 SELECT
-    (SELECT COUNT(*) FROM FILTER_PATIENT_ENROLLMENT) AS TOTAL_PACIENTES
-  , (SELECT COUNT (*) FROM VALID_PATIENT) AS DATA_NASC_NAO_NULA
-  , (SELECT COUNT (*) FROM BP_PATIENT) AS SEM_DUPLICADOS
-  , (SELECT COUNT(DISTINCT  A.PATIENT_ID) FROM BP_PATIENT A INNER JOIN FILTER_DIAGNOSIS_ENROLLMENT ON FILTER_DIAGNOSIS_ENROLLMENT.PATIENT_ID = A.PATIENT_ID) AS COM_DIAGNOSTICO
+    (SELECT COUNT(*) FROM FILTER_PATIENT_ENROLLMENT)    AS TOTAL_PACIENTES
+  , (SELECT COUNT (*) FROM VALID_PATIENT)               AS DATA_NASC_NAO_NULA
+  , (SELECT COUNT (*) FROM BP_PATIENT)                  AS SEM_DUPLICADOS
+  , (SELECT COUNT(DISTINCT  A.PATIENT_ID) 
+            FROM BP_PATIENT A 
+            INNER JOIN FILTER_DIAGNOSIS_ENROLLMENT 
+            ON FILTER_DIAGNOSIS_ENROLLMENT.PATIENT_ID = A.PATIENT_ID
+            )                                           AS COM_DIAGNOSTICO
   , (SELECT COUNT (*) FROM FILTER_DIAGNOSIS_ENROLLMENT) AS TOTAL_DIAGNOSTICOS
-  , (SELECT COUNT(*) FROM DETECT_INVALID_ICD10_STRICT) AS CID_TRES_OU_MENOS_CARAC
-  , (SELECT COUNT(*) FROM DETECT_INVALID_ICD10_RELAX)  AS CID_DOIS_CARAC_INVALIDOS
+  , (SELECT COUNT(*) FROM DETECT_INVALID_ICD10_STRICT)  AS CID_TRES_OU_MENOS_CARAC
+  , (SELECT COUNT(*) FROM DETECT_INVALID_ICD10_RELAX)   AS CID_DOIS_CARAC_INVALIDOS
+  , (SELECT COUNT(*) FROM BP_DIAGNOSIS)                 AS DIGNOSTICOS_DOS_PACIENTES
   FROM DUAL
 );
 
@@ -7468,11 +7490,42 @@ CREATE OR REPLACE VIEW COHORT_HEART_RISK_FACTOR AS
 CREATE OR REPLACE VIEW COHORT_SELECTION_CRITERIA AS
 (
   SELECT 
-      (SELECT COUNT(DEIDENTIFIED_ID) FROM BP_PATIENT) AS "Total PAUA"
-    , (SELECT COUNT(DEIDENTIFIED_ID) FROM COHORT_SELECTOR_PATIENT_AGE) AS "Dentro do Intervalo de Idade"
+      (SELECT COUNT(DEIDENTIFIED_ID) FROM BP_PATIENT)                     AS "PAUA_Totals"
+    , (SELECT COUNT(DEIDENTIFIED_ID) FROM COHORT_SELECTOR_PATIENT_AGE)    AS "Age_In_Interval"
+    , (SELECT COUNT(DEIDENTIFIED_ID) FROM COHORT_SELECTOR_PATIENT_GENDER) AS "Selected_Gender"
+    , (SELECT COUNT(PATIENT_ID)      FROM COHORT_SELECTOR_DIAGNOSIS)      AS "With_Selected_Diagnosis"
+    , (SELECT COUNT(DEIDENTIFIED_ID) FROM COHORT_ENCOUNTER 
+              WHERE OUTPATIENT > 
+                                (
+                                SELECT MAX(PARAMETER_VALUE) 
+                                FROM CURRENT_RUN_NUMBER_PARAMS 
+                                WHERE 
+                                    CRITERIA_ID = 'ENCOUNTER_SELECTION' 
+                                AND PARAMETER_TYPE = 'ENCOUNTERS_QUANTITY'
+                                )
+              )                                                           AS "At_Least_n_Encounters"
+  FROM DUAL
+);
+
+-- ******************************************************
+
+CREATE OR REPLACE VIEW COHORT_SELECTION_CRITERIA_PT AS
+(
+  SELECT 
+      (SELECT COUNT(DEIDENTIFIED_ID) FROM BP_PATIENT)                     AS "Total PAUA"
+    , (SELECT COUNT(DEIDENTIFIED_ID) FROM COHORT_SELECTOR_PATIENT_AGE)    AS "Dentro do Intervalo de Idade"
     , (SELECT COUNT(DEIDENTIFIED_ID) FROM COHORT_SELECTOR_PATIENT_GENDER) AS "Gêneros selecionados"
-    , (SELECT COUNT(DEIDENTIFIED_ID) FROM SELECTED_PATIENT) AS "Coorte com diag. de interesse"
-    , (SELECT COUNT(DEIDENTIFIED_ID) FROM COHORT_ENCOUNTER where OUTPATIENT > 2) AS "Pelo menos duas visitas"
+    , (SELECT COUNT(PATIENT_ID)      FROM COHORT_SELECTOR_DIAGNOSIS)      AS "Coorte com diag. de interesse"
+    , (SELECT COUNT(DEIDENTIFIED_ID) FROM COHORT_ENCOUNTER 
+              WHERE OUTPATIENT > 
+                                (
+                                SELECT MAX(PARAMETER_VALUE) 
+                                FROM CURRENT_RUN_NUMBER_PARAMS 
+                                WHERE 
+                                    CRITERIA_ID = 'ENCOUNTER_SELECTION' 
+                                AND PARAMETER_TYPE = 'ENCOUNTERS_QUANTITY'
+                                )
+              )                                                           AS "Pelo menos duas visitas"
   FROM DUAL
 );
 
