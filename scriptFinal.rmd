@@ -1,0 +1,1390 @@
+```{r knitrSetup, message=FALSE,include=FALSE, echo=FALSE}
+oldw <- getOption("warn")
+options(warn = -1)
+
+# set the working directory to the one with jdbc driver folder
+# so database can be accessed
+# Mac Tereza
+ setwd("/Users/tereza/Dropbox/CoortEx")
+# aCER tEREZA
+# setwd("C:/Users/Tereza/Dropbox/CoortEx")
+# Mac Pablo
+#setwd("~/Public/Drop Box/Dropbox/CoortEx")
+
+  #Check if the following packages have been installed. If not, install them
+  if (!"knitr" %in% installed.packages()) install.packages("knitr", repos = 'http://cran.us.r-project.org')
+  if (!"RcmdrMisc" %in% installed.packages()) install.packages("RcmdrMisc", repos = 'http://cran.us.r-project.org')
+  if (!"plotrix" %in% installed.packages()) install.packages("plotrix", repos = 'http://cran.us.r-project.org')
+  if (!"pyramid" %in% installed.packages()) install.packages("pyramid", repos = 'http://cran.us.r-project.org')
+
+  suppressPackageStartupMessages(library(plotrix, warn.conflicts=FALSE))
+  suppressPackageStartupMessages(library(knitr, warn.conflicts=FALSE))
+  suppressPackageStartupMessages(library(RcmdrMisc, warn.conflicts=FALSE))
+  suppressPackageStartupMessages(library(pyramid, warn.conflicts=FALSE))
+
+  require(knitr)
+# sets output for inline results nicely
+knit_hooks$set(inline = identity) 
+
+# kills knitr if there is an error, therefore we don't waste time generating error messages
+knit_hooks$set(error = function(x, options) stop(x)) 
+```
+
+```{r rsetup, message=FALSE,echo=FALSE}
+require(ggplot2)
+
+figCount <- c(`_` = 0)
+tableCount <- c(`_` = 0)
+
+  #Check if the following packages have been installed. If not, install them
+  if (!"car" %in% installed.packages()) install.packages("car", repos = 'http://cran.us.r-project.org')
+
+  suppressPackageStartupMessages(library(car, warn.conflicts=FALSE))
+
+```
+
+```{r utilFunctions, message=FALSE,echo=FALSE}
+# Utils from https://gist.github.com/rmflight/3858973
+# http://www.r-bloggers.com/writing-papers-using-r-markdown/
+pasteLabel <- function(preText, inObj, objName, insLink=TRUE){
+  objNum <- inObj[objName]
+  
+  useText <- paste(preText, objNum, sep=" ")
+	if (insLink){
+		useText <- paste("[", useText, "](#", objName, ")", sep="")
+	}
+	useText
+}
+ 
+# this increments the counter, and gives a name to the number so we can reference it later
+incCount <- function(inObj, useName){
+	nObj <- length(inObj)
+	useNum <- max(inObj) + 1
+	inObj <- c(inObj, useNum)
+	names(inObj)[nObj+1] <- useName
+	inObj
+}
+figCount <- c("_"=0)
+tableCount <- c("_"=0)
+ 
+tableCat <- function(inFrame){
+	outText <- paste(names(inFrame), collapse=" | ")
+	outText <- c(outText, paste(rep("---", ncol(inFrame)), collapse=" | "))
+	invisible(apply(inFrame, 1, function(inRow){
+		outText <<- c(outText, paste(inRow, collapse=" | "))
+	}))
+	return(outText)
+}
+# http://stackoverflow.com/questions/11561856/add-new-row-to-dataframe
+insertRow2 <- function(df, r, p) {
+  df <- rbind(df,r)
+  df <- df[order(c(1:(nrow(df)-1),p-0.5)),]
+  row.names(df) <- 1:nrow(df)
+  return(df)  
+}
+
+```
+
+```{r loadCohortTable, message=FALSE,echo=FALSE}
+  if (!"RJDBC" %in% installed.packages()) install.packages("RJDBC", repos = 'http://cran.us.r-project.org')
+  suppressPackageStartupMessages(library(RJDBC, warn.conflicts=FALSE))
+
+# This function connects to the database using JDBC and reads tables
+# Parameters: connection: the connection.csv file already loaded, tableName: table to read, 
+# query: if present, the query used to read the data, if absent: "SELECT * FROM <tableName>" will be used
+# Connection data is stored in a file connection.csv found at: <r script diretory>/driverJDBC
+# Create a csv file with two lines of text with three fields on it:
+#  - host_port_sid: The url connection string. Ex: jdbc:oracle:thin:@localhost:1521/orcl
+#  - username: The user name to access the database
+#  - password: The user password
+# Save the file as connection.csv at the driverJDBC folder
+# Example: First line of text (always the same): "host_port_sid";"username";"password"
+# 'Example: Secnd line of text (your data here) : "jdbc:oracle:thin:@localhost:1521/orcl";"desenv";"desenv"
+# Read the file in an R object before calling this function and pass it as connection parameter.
+
+loadCohortTable <- function(connection, tableName,query){
+    message("-------------------------LOAD COHORT TABLE FUNCTION-----------------------------")
+    
+    if (missing(query)) {
+      query <- paste0("SELECT * FROM ",tableName)
+    }
+    
+    # Load Java
+    options(java.parameters="-Xss512M -Xms512M -Xmx1024M -d64")
+    library(rJava)
+    
+   # Output JAVA_HOME
+    message (paste0('Verifying Java, JAVA_HOME = ',JAVA_HOME))
+   
+    # Output Java version
+    .jinit()
+    message(paste0("Java version: ",.jcall("java/lang/System", "S", "getProperty", "java.version")))
+    message ('It seems ok.')
+          
+    # Load RJDBC library
+    options(java.parameters="-Xss512M -Xms512M -Xmx1536M -d64")
+    library(RJDBC)
+    
+    # Create connection driver and open connection
+    # For other databases, change next line accordling
+    jdbcDriver <- JDBC(driverClass="oracle.jdbc.OracleDriver", classPath="driverJDBC/ojdbc6.jar")
+    message(paste0('Connection url (database.hostname.com:port/service_name_or_sid): ',connection$host_port_sid))
+    
+    message(paste0('Connection user: ',connection$username))
+    jdbcConnection <- dbConnect(jdbcDriver, connection$host_port_sid, connection$username, connection$password)
+     
+    # Query on the Oracle instance name.
+    instanceName <- dbGetQuery(jdbcConnection, "select sys_context('USERENV','INSTANCE_NAME') from dual")
+    message(paste0("Checking access to the database, querying for the instance name: ",instanceName))
+    
+    # Read COHORT_PATIENT
+    message(paste0("Trying to read the following table: ", tableName))
+    
+    # Read table with data
+    res<-dbSendQuery(jdbcConnection,query)
+                  
+    START_LOAD <- proc.time()
+    
+    result<-list()
+    i=1
+    pb <- txtProgressBar(1,70,style=1, char = ".")
+    result[[i]]<-fetch(res,n=1000)
+    setTxtProgressBar(pb, i)
+    while(nrow(chunk <- fetch(res, n = 1000))>0){
+          i<-i+1
+          result[[i]]<-chunk
+          setTxtProgressBar(pb, i)
+          }
+    close(pb)
+    
+    END_LOAD <- proc.time()
+    message(paste0("End reading table. Time spent: ",round((END_LOAD - START_LOAD)["elapsed"],2)," seg. to read: ",i," chuncks of 1000 rows each."))
+    
+    START_BIND <- proc.time()    
+    COHORT_TABLE<-do.call(rbind,result)
+    END_BIND <- proc.time()
+
+    message(paste0("Time spent to bind: ",round((END_BIND - START_BIND)["elapsed"],2)," seg."))
+    
+    #Read table comments
+    message("Read table comments...")
+    # cpTableComment <-list()
+    # tableCommentQuery <- paste0("SELECT MVIEW_NAME AS TABLE_NAME, COMMENTS FROM USER_MVIEW_COMMENTS WHERE MVIEW_NAME = '",connection$tablename,"'")
+    # cpTableComment <- dbGetQuery(jdbcConnection,tableCommentQuery)
+    
+    
+    #Read columns comments
+    message("Read column comments...")
+    # cpResultColumns <- list()
+    # columnCommentQuery <- paste0("SELECT COLUMN_NAME,COMMENTS FROM USER_COL_COMMENTS WHERE TABLE_NAME='",connection$tablename,"'")
+    # resCol <- dbSendQuery(jdbcConnection,columnCommentQuery)
+    
+    # resultColumns<-list()
+    # j=1
+    # pbC <- txtProgressBar(1,10,style=1, char = ".")
+    # resultColumns[[j]]<-fetch(resCol,n=50)
+    # setTxtProgressBar(pbC, j)
+    # while(nrow(chunk <- fetch(resCol, n = 50))>0){
+    #       j<-j+1
+    #       resultColumns[[j]]<-chunk
+    #       setTxtProgressBar(pbC, j)
+    #       }
+    # close(pbC)
+  
+    # Close connection
+    # dbDisconnect(jdbcConnection)
+    
+    # columnComment <- do.call(rbind,resultColumns)
+    #Save data to csv file
+    message(paste0("Data succsesfully read from table on Oracle database. Saving to ",tableName,".csv file"))
+    START_SAVE <- proc.time()
+    write.table(COHORT_TABLE,        file = paste0(tableName,".csv"),row.names=FALSE, na="", quote = TRUE, sep = ";")
+    # write.table(cpTableComment,  file = "tableComment.csv",row.names=FALSE, na="", quote = TRUE, sep = ";")
+    # write.table(cpColumnComment, file = "columnComment.csv",row.names=FALSE, na="", quote = TRUE, sep = ";")
+    END_SAVE <- proc.time()
+    message (paste0("Data from table : ", tableName, " successfully read from database and write to ", tableName, ".csv file in: ",round((END_SAVE - START_SAVE)["elapsed"],2), " seg."))
+    
+    # Close connection
+    dbDisconnect(jdbcConnection)
+    
+    # tableCommentQuery,columnCommentQuery,pb,pbC,res,resCol,result,resultColumns,j
+    rm(jdbcConnection,jdbcDriver,query,i,chunk,instanceName,START_BIND,END_BIND,START_LOAD,END_LOAD,START_SAVE,END_SAVE)
+    
+#    detach("package:RJDBC", unload=TRUE)
+
+#    detach("package:rJava", unload=TRUE)
+
+  return(COHORT_TABLE)
+}
+```
+
+````{r SurvivalNiceGraph function, message=FALSE,echo=FALSE}
+#' Create a Kaplan-Meier plot using ggplot2
+#'
+#' @param sfit: a survfit object
+#' @param table: logical: Create a table graphic below the K-M plot, indicating at-risk numbers?
+#' @param returns logical: if TRUE, return an arrangeGrob object
+#' @param xlabs: x-axis label
+#' @param ylabs: y-axis label
+#' @param ystratalabs: The strata labels. Default = levels(summary(sfit)$strata)
+#' @param ystrataname: The legend name. Default = "Strata"
+#' @param timeby numeric: control the granularity along the time-axis
+#' @param main plot title
+#' @param pval logical: add the pvalue to the plot?
+#' @param marks logical: should censoring marks be added?
+#' @param shape: what shape should the censoring marks be, default is a vertical line
+#' @param legend logical: should a legend be added to the plot?
+#' 
+#' @return a ggplot is made. if return=TRUE, then an arrangeGlob object
+#' is returned
+#' @author Abhijit Dasgupta with contributions by Gil Tomas
+#' \url{http://statbandit.wordpress.com/2011/03/08/an-enhanced-kaplan-meier-plot/}
+#' slight adjustment to cope with none strata calls (e.g. Surv(time,event)~1), 
+#' option to remove the legend and also draw marks at censoring locations by Nadieh Bremer
+#' 
+#' @examples
+#'  library(survival)
+#'  data(colon)
+#'  fit <- survfit(Surv(time,status)~rx, data=colon)
+#'  ggkm(fit, timeby=500)
+
+ggkm <- function(sfit,
+                 table = TRUE,
+                 returns = FALSE,
+                 xlabs = "Time (days)",
+                 ylabs = "Survival Probability",
+                 xlims = c(0,max(sfit$time)),
+                 ylims = c(0,1),
+                 ystratalabs = NULL,
+                 ystrataname = NULL,
+                 timeby = 100,
+                 main = "Kaplan-Meier Plot",
+                 pval = TRUE,
+                 marks = FALSE,
+                 shape = 3,
+                 legend = TRUE,
+                 subs = NULL,
+                 ...) {
+  
+  #############
+  # libraries #
+  #############
+  
+  #Check if the following packages have been installed. If not, install them
+  if (!"ggplot2" %in% installed.packages()) install.packages("ggplot2", repos = 'http://cran.us.r-project.org')
+  if (!"survival" %in% installed.packages()) install.packages("survival", repos = 'http://cran.us.r-project.org')
+  if (!"gridExtra" %in% installed.packages()) install.packages("gridExtra", repos = 'http://cran.us.r-project.org')
+  if (!"reshape" %in% installed.packages()) install.packages("reshape", repos = 'http://cran.us.r-project.org')
+  
+  suppressPackageStartupMessages(library(ggplot2, warn.conflicts=FALSE))
+  suppressPackageStartupMessages(library(survival, warn.conflicts=FALSE))
+  suppressPackageStartupMessages(library(gridExtra, warn.conflicts=FALSE))
+  suppressPackageStartupMessages(library(reshape, warn.conflicts=FALSE))
+  
+  #################################
+  # sorting the use of subsetting #
+  #################################
+  
+  times <- seq(0, max(sfit$time), by = timeby)
+  
+  if(is.null(subs)){
+    if(length(levels(summary(sfit)$strata)) == 0) {
+      subs1 <- 1
+      subs2 <- 1:length(summary(sfit,censored=T)$time)
+      subs3 <- 1:length(summary(sfit,times = times,extend = TRUE)$time)
+    } else {
+      subs1 <- 1:length(levels(summary(sfit)$strata))
+      subs2 <- 1:length(summary(sfit,censored=T)$strata)
+      subs3 <- 1:length(summary(sfit,times = times,extend = TRUE)$strata)
+    }
+  } else{
+    for(i in 1:length(subs)){
+      if(i==1){
+        ssvar <- paste("(?=.*\\b=",subs[i],sep="")
+      }
+      if(i==length(subs)){
+        ssvar <- paste(ssvar,"\\b)(?=.*\\b=",subs[i],"\\b)",sep="")
+      }
+      if(!i %in% c(1, length(subs))){
+        ssvar <- paste(ssvar,"\\b)(?=.*\\b=",subs[i],sep="")
+      }
+      if(i==1 & i==length(subs)){
+        ssvar <- paste("(?=.*\\b=",subs[i],"\\b)",sep="")
+      }
+    }
+    subs1 <- which(regexpr(ssvar,levels(summary(sfit)$strata), perl=T)!=-1)
+    subs2 <- which(regexpr(ssvar,summary(sfit,censored=T)$strata, perl=T)!=-1)
+    subs3 <- which(regexpr(ssvar,summary(sfit,times = times,extend = TRUE)$strata, perl=T)!=-1)
+  }
+  
+  if(!is.null(subs)) pval <- FALSE
+  
+  ##################################
+  # data manipulation pre-plotting #
+  ##################################
+  
+  if(length(levels(summary(sfit)$strata)) == 0) {
+    #[subs1]
+    if(is.null(ystratalabs)) ystratalabs <- as.character(sub("group=*","","All"))
+  } else {
+    #[subs1]
+    if(is.null(ystratalabs)) ystratalabs <- as.character(sub("group=*","",names(sfit$strata)))
+  }
+  
+  if(is.null(ystrataname)) ystrataname <- "Strata"
+  m <- max(nchar(ystratalabs))
+  times <- seq(0, max(sfit$time), by = timeby)
+  
+  if(length(levels(summary(sfit)$strata)) == 0) {
+    Factor <- factor(rep("All",length(subs2)))
+  } else {
+    Factor <- factor(summary(sfit, censored = T)$strata[subs2])
+  }
+  
+  #Data to be used in the survival plot
+  .df <- data.frame(
+    time = sfit$time[subs2],
+    n.risk = sfit$n.risk[subs2],
+    n.event = sfit$n.event[subs2],
+    n.censor = sfit$n.censor[subs2],
+    surv = sfit$surv[subs2],
+    strata = Factor,
+    upper = sfit$upper[subs2],
+    lower = sfit$lower[subs2]
+  )
+  
+  #Final changes to data for survival plot
+  levels(.df$strata) <- ystratalabs
+  zeros <- data.frame(time = 0, surv = 1,
+                      strata = factor(ystratalabs, levels=levels(.df$strata)),
+                      upper = 1, lower = 1)
+  .df <- rbind.fill(zeros, .df)
+  d <- length(levels(.df$strata))
+  
+  ###################################
+  # specifying plot parameteres etc #
+  ###################################
+  
+  p <- ggplot( .df, aes(time, surv)) +
+    geom_step(aes(linetype = strata), size = 0.7) +
+    theme_bw() +
+    theme(axis.title.x = element_text(vjust = 0.5)) +
+    scale_x_continuous(xlabs, breaks = times, limits = xlims) +
+    scale_y_continuous(ylabs, limits = ylims) +
+    theme(panel.grid.minor = element_blank()) +
+    # MOVE LEGEND HERE BELOW [first is x dim, second is y dim]
+    theme(legend.position = c(ifelse(m < 10, .35, .25),ifelse(d < 4, .35, .3))) +
+#    theme(legend.position = c(ifelse(m < 10, .85, .75),ifelse(d < 4, .85, .8))) +
+    theme(legend.key = element_rect(colour = NA)) +
+    theme(panel.border = element_blank()) +
+    labs(linetype = ystrataname) +
+    theme(plot.margin = unit(c(0, 1, .5,ifelse(m < 10, 1.5, 2.5)),"lines")) +
+    ggtitle(main)
+  
+  #Removes the legend: 
+  if(legend == FALSE) 
+    p <- p + theme(legend.position="none")
+  
+  #Add censoring marks to the line:
+  if(marks == TRUE)
+    p <- p + geom_point(data = subset(.df, n.censor >= 1), aes(x = time, y = surv), shape = shape)
+  
+  ## Create a blank plot for place-holding
+  blank.pic <- ggplot(.df, aes(time, surv)) +
+    geom_blank() + theme_bw() +
+    theme(axis.text.x = element_blank(),axis.text.y = element_blank(),
+          axis.title.x = element_blank(),axis.title.y = element_blank(),
+          axis.ticks = element_blank(),
+          panel.grid.major = element_blank(),panel.border = element_blank())
+  
+  #####################
+  # p-value placement #
+  #####################a
+  
+  if(length(levels(summary(sfit)$strata)) == 0) pval <- FALSE
+    
+  if(pval == TRUE) {
+    sdiff <- survdiff(eval(sfit$call$formula), data = eval(sfit$call$data))
+    pvalue <- pchisq(sdiff$chisq,length(sdiff$n) - 1,lower.tail = FALSE)
+    pvaltxt <- ifelse(pvalue < 0.0001,"p < 0.0001",paste("p =", signif(pvalue, 3)))
+    # MOVE P-VALUE LEGEND HERE BELOW [set x and y]
+    p <- p + annotate("text",x =0.15*max(sfit$time) , y = 0.1,label = pvaltxt)
+  }#if
+  #ifelse(m < 10, .35, .25)
+  ###################################################
+  # Create table graphic to include at-risk numbers #
+  ###################################################
+  
+  if(length(levels(summary(sfit)$strata)) == 0) {
+    Factor <- factor(rep("All",length(subs3)))
+  } else {
+    Factor <- factor(summary(sfit,times = times,extend = TRUE)$strata[subs3])
+  }
+  
+  if(table) {
+    risk.data <- data.frame(
+      strata = Factor,
+      time = summary(sfit,times = times,extend = TRUE)$time[subs3],
+      n.risk = summary(sfit,times = times,extend = TRUE)$n.risk[subs3]
+    )
+    risk.data$strata <- factor(risk.data$strata, levels=rev(levels(risk.data$strata)))
+    
+    data.table <- ggplot(risk.data,aes(x = time, y = strata, label = format(n.risk, nsmall = 0))) +
+      geom_text(size = 3.5) + theme_bw() +
+      scale_y_discrete(breaks = as.character(levels(risk.data$strata)),
+                       labels = rev(ystratalabs)) +
+      scale_x_continuous("Numbers at risk", limits = xlims) +
+      theme(axis.title.x = element_text(size = 10, vjust = 1),
+            panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            panel.border = element_blank(),axis.text.x = element_blank(),
+            axis.ticks = element_blank(),axis.text.y = element_text(face = "bold",hjust = 1))
+    
+    data.table <- data.table +
+      theme(legend.position = "none") + xlab(NULL) + ylab(NULL)
+    
+    # ADJUST POSITION OF TABLE FOR AT RISK
+    data.table <- data.table +
+      theme(plot.margin = unit(c(-1.5, 1, 0.1, ifelse(m < 10, 2.5, 3.5) - 0.15 * m), "lines"))
+    
+    #######################
+    # Plotting the graphs #
+    #######################
+
+    grid.arrange(p, blank.pic, data.table, clip = FALSE, nrow = 3,
+                 ncol = 1, heights = unit(c(2, .1, .25),c("null", "null", "null")))
+    
+    if(returns) {
+      a <- arrangeGrob(p, blank.pic, data.table, clip = FALSE, nrow = 3,
+                       ncol = 1, heights = unit(c(2, .1, .25), c("null", "null", "null")))
+      return(a)
+    }#if
+  } else {
+    if(returns) return(p)
+  }#else
+}
+
+##################################################################################################
+##################################################################################################
+##################################################################################################
+````
+
+
+```{r LoadData, message=FALSE,include=FALSE, echo=FALSE}
+# Are we in RStudio?
+# http://thecoatlessprofessor.com/programming/detecting-if-r-is-in-rstudio-and-changing-rstudios-default-graphing-device/
+is.rstudio = function(){
+  .Platform$GUI == "RStudio"
+}
+
+require(RJDBC)
+# Load COHORT TABLES
+# Do not waste time loading data form database or from files 
+# if we are on RStudio and are already loaded.
+if (!is.rstudio() || !exists("COHORT_PCI",inherits = TRUE)) {
+  message ('Data not loaded. Will try to load from: ', appendLF = FALSE)
+  message (paste0(getwd(),'/cohort_patient.csv'))
+  if (file.exists('cohort_patient.csv'))
+    {
+    message ('Reading COHORT_DEATH.csv. ', appendLF = TRUE)
+    COHORT_DEATH     <- read.table("COHORT_DEATH.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading COHORT_DIAGNOSIS.csv. ', appendLF = TRUE)
+    COHORT_DIAGNOSIS <- read.table("COHORT_DIAGNOSIS.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading COHORT_DRUGS.csv. ', appendLF = TRUE)
+    COHORT_DRUGS                 <- read.table("COHORT_DRUGS.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading COHORT_DRUGS_DETAIL.csv. ', appendLF = TRUE)
+    COHORT_DRUGS_DETAIL          <- read.table("COHORT_DRUGS_DETAIL.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading COHORT_ENCOUNTER.csv. ', appendLF = TRUE)
+    COHORT_ENCOUNTER <- read.table("COHORT_ENCOUNTER.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading COHORT_FRST_OUTPAT_ENCOUNTER.csv. ', appendLF = TRUE)
+    COHORT_FRST_OUTPAT_ENCOUNTER <- read.table("COHORT_FRST_OUTPAT_ENCOUNTER.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading COHORT_HEART_RISK_FACTOR.csv. ', appendLF = TRUE)
+    COHORT_HEART_RISK_FACTOR     <- read.table("COHORT_HEART_RISK_FACTOR.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading COHORT_INDEXEVENT_OUTCOMEEVENT.csv. ', appendLF = TRUE)
+    COHORT_INDEXEVENT_OUTCOMEEVENT <- read.table("COHORT_INDEXEVENT_OUTCOMEEVENT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading COHORT_INTERVENTION.csv. ', appendLF = TRUE)
+    COHORT_INTERVENTION           <- read.table("COHORT_INTERVENTION.csv", header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading COHORT_LABTEST_TRANSPOSED.csv. ', appendLF = TRUE)
+    COHORT_LABTEST_TRANSPOSED    <- read.table("COHORT_LABTEST_TRANSPOSED.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading COHORT_OVERALL_DBPOP_GENDER.csv. ', appendLF = TRUE)
+    COHORT_OVERALL_DBPOP_GENDER    <- read.table("COHORT_OVERALL_DBPOP_GENDER.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading COHORT_PATIENT.csv. ', appendLF = TRUE)
+    COHORT_PATIENT <- read.table("COHORT_PATIENT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading COHORT_PCI.csv. ', appendLF = TRUE)
+    COHORT_PCI     <- read.table("COHORT_PCI.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading COHORT_SELECTION_CRITERIA.csv. ', appendLF = TRUE)
+    COHORT_SELECTION_CRITERIA    <- read.table("COHORT_SELECTION_CRITERIA.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading COHORT_SURGERY.csv. ', appendLF = TRUE)
+    COHORT_SURGERY   <- read.table("COHORT_SURGERY.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading COHORT_SURVIVAL.csv. ', appendLF = TRUE)
+    COHORT_SURVIVAL     <- read.table("COHORT_SURVIVAL.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    # Indicators
+    message ('Reading INDICATOR_ENCOUNTER_GENDER.csv. ', appendLF = TRUE)
+    INDICATOR_ENCOUNTER_GENDER             <- read.table("INDICATOR_ENCOUNTER_GENDER.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading INDICATOR_ENCOUNTER_GENDER_PT.csv. ', appendLF = TRUE)
+    INDICATOR_ENCOUNTER_GENDER_PT             <- read.table("INDICATOR_ENCOUNTER_GENDER_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading INDICATOR_BASE_QUALITY.csv. ', appendLF = TRUE)
+    INDICATOR_BASE_QUALITY                 <- read.table("INDICATOR_BASE_QUALITY.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    
+    message ('Reading INDICATOR_DIAGNOSIS_PROFILE.csv. ', appendLF = TRUE)
+    INDICATOR_DIAGNOSIS_PROFILE    <- read.table("INDICATOR_DIAGNOSIS_PROFILE.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading INDICATOR_DIAGNOSIS_PROFILE_PT.csv. ', appendLF = TRUE)
+    INDICATOR_DIAGNOSIS_PROFILE_PT    <- read.table("INDICATOR_DIAGNOSIS_PROFILE_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading INDICATOR_ICD10_CONFORMITY.csv. ', appendLF = TRUE)
+    INDICATOR_ICD10_CONFORMITY    <- read.table("INDICATOR_ICD10_CONFORMITY.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading INDICATOR_ICD10_CONFORMITY_PT.csv. ', appendLF = TRUE)
+    INDICATOR_ICD10_CONFORMITY_PT    <- read.table("INDICATOR_ICD10_CONFORMITY_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading INDICATOR_PATIENT.csv. ', appendLF = TRUE)
+    INDICATOR_PATIENT    <- read.table("INDICATOR_PATIENT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading INDICATOR_PATIENT_PT.csv. ', appendLF = TRUE)
+    INDICATOR_PATIENT_PT    <- read.table("INDICATOR_PATIENT_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading INDICATOR_PATIENT_GENDER.csv. ', appendLF = TRUE)
+    INDICATOR_PATIENT_GENDER    <- read.table("INDICATOR_PATIENT_GENDER.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading INDICATOR_PATIENT_GENDER_PT.csv. ', appendLF = TRUE)
+    INDICATOR_PATIENT_GENDER_PT    <- read.table("INDICATOR_PATIENT_GENDER_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading INDICATOR_SURGERY.csv. ', appendLF = TRUE)
+    INDICATOR_SURGERY    <- read.table("INDICATOR_SURGERY.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading INDICATOR_SURGERY_PT.csv. ', appendLF = TRUE)
+    INDICATOR_SURGERY_PT    <- read.table("INDICATOR_SURGERY_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading PAUA_TOTALS.csv. ', appendLF = TRUE)
+    PAUA_TOTALS    <- read.table("PAUA_TOTALS.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    message ('Reading PAUA_TOTALS_PT.csv. ', appendLF = TRUE)
+    PAUA_TOTALS_PT    <- read.table("PAUA_TOTALS_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    
+    
+    message ('Files read. ', appendLF = TRUE)
+    # cpTableComment  <- read.table("cpTableComment.csv",  header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+    # cpColumnComment <- read.table("cpColumnComment.csv", header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
+
+    } else {
+      message (paste0('File cohort_patient.csv does not exists in the current working directory which is: ', getwd()))
+      message ('Trying to download from Oracle Database.')
+      message ('You must be connected by a VPN or in the same network.')
+#     Set the JAVA_HOME environment variable or comment the next line to rely on a JAVA_HOME already set
+#     On Mac OS X, install legacy Java 6 at https://support.apple.com/kb/DL1572, if you got problems 
+      Sys.setenv(JAVA_HOME='/Library/Java/Home/')
+      JAVA_HOME <- Sys.getenv('JAVA_HOME')
+      if (JAVA_HOME == '' )
+        {
+        message ('JAVA_HOME is not set.')
+        message ('Please, verify if Java is installed and set the JAVA_HOME environment variable on your computer')
+        } else {
+          
+          # Go ahead and try to load driver
+          if(file.exists("driverJDBC/ojdbc6.jar")) 
+            {
+            message(paste0('Driver ojdbc6.jar found at : ', getwd(),'/driverJDBC/ folder'))
+            message('Trying to load connection.txt parameters file')
+            
+            #Are connection settings (user/password) available?
+            if (file.exists('driverJDBC/connection.csv')) 
+              {
+
+              #Load connection parameters
+              connection <- read.table("driverJDBC/connection.csv", header=TRUE, sep=";", strip.white=TRUE, stringsAsFactors=FALSE )
+              
+
+              COHORT_DEATH                    <- loadCohortTable(connection,'COHORT_DEATH')
+              COHORT_DIAGNOSIS                <- loadCohortTable(connection,'COHORT_DIAGNOSIS')
+              COHORT_DRUGS                    <- loadCohortTable(connection,'COHORT_DRUGS')
+              COHORT_DRUGS_DETAIL             <- loadCohortTable(connection,'COHORT_DRUGS_DETAIL')
+              COHORT_ENCOUNTER                <- loadCohortTable(connection,'COHORT_ENCOUNTER')
+
+              query = "SELECT DEIDENTIFIED_ID
+                    , AGE_FIRST_OUTP_ENCOUNTER
+                    , SYMPTOM_CODE, SYMPTOM_DESCRIPTION
+                    , SYMPTOM_DURATION
+                FROM COHORT_FRST_OUTPAT_ENCOUNTER"
+              COHORT_FRST_OUTPAT_ENCOUNTER    <- loadCohortTable(connection,'COHORT_FRST_OUTPAT_ENCOUNTER', query)
+
+              COHORT_HEART_RISK_FACTOR        <- loadCohortTable(connection,'COHORT_HEART_RISK_FACTOR')
+              COHORT_INDEXEVENT_OUTCOMEEVENT  <- loadCohortTable(connection,'COHORT_INDEXEVENT_OUTCOMEEVENT')
+              COHORT_INTERVENTION             <- loadCohortTable(connection,'COHORT_INTERVENTION')
+              COHORT_LABTEST_TRANSPOSED       <- loadCohortTable(connection,'COHORT_LABTEST_TRANSPOSED')
+              COHORT_OVERALL_DBPOP_GENDER       <- loadCohortTable(connection,'COHORT_OVERALL_DBPOP_GENDER')
+              
+              COHORT_PATIENT                  <- loadCohortTable(connection,'COHORT_PATIENT')
+              COHORT_PCI                      <- loadCohortTable(connection,'COHORT_PCI')
+              COHORT_SELECTION_CRITERIA       <- loadCohortTable(connection,'COHORT_SELECTION_CRITERIA')
+
+              query = "SELECT DEIDENTIFIED_ID, ICD10_FIRST_SURGERY, AGE_FIRST_SURGERY
+                    , ICD10_LAST_SURGERY, AGE_LAST_SURGERY
+                    , SURGERY_INTERVAL, SURGERY_QUANTITY
+                    , AGE_SURGERY_1, WEIGHT_1, HEIGHT_1, ICD10_1, SURGICAL_SPECIALITY_1
+                    , AGE_SURGERY_2, WEIGHT_2, HEIGHT_2, ICD10_2, SURGICAL_SPECIALITY_2
+                    , AGE_SURGERY_3, WEIGHT_3, HEIGHT_3, ICD10_3, SURGICAL_SPECIALITY_3
+                    , AGE_SURGERY_4, WEIGHT_4, HEIGHT_4, ICD10_4, SURGICAL_SPECIALITY_4
+                FROM COHORT_SURGERY"
+              COHORT_SURGERY                  <- loadCohortTable(connection,'COHORT_SURGERY', query)
+              COHORT_SURVIVAL                 <- loadCohortTable(connection,'COHORT_SURVIVAL')
+              
+              
+              INDICATOR_ENCOUNTER_GENDER      <- loadCohortTable(connection,'INDICATOR_ENCOUNTER_GENDER')
+              INDICATOR_ENCOUNTER_GENDER_PT   <- loadCohortTable(connection,'INDICATOR_ENCOUNTER_GENDER_PT')
+              
+              INDICATOR_BASE_QUALITY          <- loadCohortTable(connection,'INDICATOR_BASE_QUALITY')
+              INDICATOR_DIAGNOSIS_PROFILE     <- loadCohortTable(connection,'INDICATOR_DIAGNOSIS_PROFILE')
+              INDICATOR_DIAGNOSIS_PROFILE_PT  <- loadCohortTable(connection,'INDICATOR_DIAGNOSIS_PROFILE_PT')
+              
+              INDICATOR_ICD10_CONFORMITY      <- loadCohortTable(connection,'INDICATOR_ICD10_CONFORMITY')
+              INDICATOR_ICD10_CONFORMITY_PT   <- loadCohortTable(connection,'INDICATOR_ICD10_CONFORMITY_PT')
+              
+              INDICATOR_PATIENT               <- loadCohortTable(connection,'INDICATOR_PATIENT')
+              INDICATOR_PATIENT_PT            <- loadCohortTable(connection,'INDICATOR_PATIENT_PT')
+              
+              INDICATOR_PATIENT_GENDER        <- loadCohortTable(connection,'INDICATOR_PATIENT_GENDER')
+              INDICATOR_PATIENT_GENDER_PT     <- loadCohortTable(connection,'INDICATOR_PATIENT_GENDER_PT')
+              
+              INDICATOR_SURGERY               <- loadCohortTable(connection,'INDICATOR_SURGERY')
+              INDICATOR_SURGERY_PT            <- loadCohortTable(connection,'INDICATOR_SURGERY_PT')
+
+              PAUA_TOTALS                     <- loadCohortTable(connection,'PAUA_TOTALS')
+              PAUA_TOTALS_PT                  <- loadCohortTable(connection,'PAUA_TOTALS_PT')
+
+              # rm(connection,jdbcConnection,jdbcDriver,JAVA_HOME,query,tableCommentQuery,columnCommentQuery,i,j,chunk,instanceName,pb,pbC,res,resCol,result,resultColumns,START_BIND,END_BIND,START_LOAD,END_LOAD,START_SAVE,END_SAVE)
+              rm(connection)
+              message("Done...")
+
+
+              } else {
+              message (paste0('File connection.csv not found at: ', getwd(), '/driverJDBC folder'))
+              message("Please, create a csv file with two lines of text with four fields on it:")
+              message(" - host_port_sid: The url connection string. Ex: jdbc:oracle:thin:@localhost:1521/orcl")
+              message(" - username: The user name to access the database")
+              message(" - password: The user password")
+              message(" - tablename: The name of the table with data to read")
+              message("Save the file as connection.csv at the driverJDBC folder")
+              message('Example: First line of text (always the same): "host_port_sid";"username";"password";"tablename"')
+              message('Example: Secnd line of text (your data here) : "jdbc:oracle:thin:@localhost:1521/orcl";"desenv";"desenv";"MODEL_ONE_CLEAN"')
+            }
+            
+          } else {
+                  message(paste0('Oracle driver not found at: ', getwd(),'/driverJDBC/ojdbc6.jar'))
+                  message('Please, download the driver (ojdbc6.jar) from Oracle and put in the driverJDBC folder')
+          }
+        }
+    }
+} else {
+      message('Data loaded')
+}
+```
+---
+title: "A method for cohort selection of cardiovascular disease records from an electronic health record system"
+author: "Maria Tereza Fernandes Abrahao"
+date: "March 11, 2016"
+output: html_document
+---
+
+The following data corresponds to the published paper.
+
+###Overall data totals###  
+Profile of all database records, summarizes the available patients and diagnosis to compund cohorts.
+ICD-10 Strict: At least 5 valid characters
+ICD-10 Relax:  At least 3 valid characters
+
+````{r message=FALSE, results='asis',echo=FALSE}
+tableCount <- incCount(tableCount, "PauÃ¡ Totals")
+````
+
+`r I(pasteLabel("Table", tableCount, "PauÃ¡ Totals", FALSE))` Overall database totals.
+
+````{r message=FALSE, results='asis',echo=FALSE}
+cat(tableCat(PAUA_TOTALS), sep="\n")
+````
+
+####Gender Distribution#### 
+
+````{r message=FALSE, results='asis',echo=FALSE}
+tableCount <- incCount(tableCount, "Gender distribution")
+````
+
+`r I(pasteLabel("Table", tableCount, "Gender distribution", FALSE))` Gender distributions.
+
+````{r message=FALSE, results='asis',echo=FALSE}
+cat(tableCat(INDICATOR_PATIENT_GENDER), sep="\n")
+````
+
+####Encounter Distribution#### 
+
+````{r message=FALSE, results='asis',echo=FALSE}
+tableCount <- incCount(tableCount, "Encounters")
+````
+
+`r I(pasteLabel("Table", tableCount, "Encounters", FALSE))` Encounters by gender distribution.
+
+````{r message=FALSE, results='asis',echo=FALSE}
+cat(tableCat(INDICATOR_ENCOUNTER_GENDER), sep="\n")
+````
+
+
+####Diagnosis distribution####
+
+```{r message=FALSE, results='asis',echo=FALSE}
+
+tableCount <- incCount(tableCount, "Pauá Diagnosis Profile")
+
+```
+
+`r I(pasteLabel("Tabela", tableCount, "Pauá Diagnosis Profile", FALSE))` Pauá diagnosis profile.
+
+```{r message=FALSE, results='asis',echo=FALSE}
+perfilDiag <- INDICATOR_DIAGNOSIS_PROFILE
+
+qualidadeBase <- tableCat(perfilDiag)
+
+cat(qualidadeBase, sep = "\n")
+
+figCount <- incCount(figCount, "Diagnostic distribution by chapter")
+
+```
+
+````{r PlotDiagnostics, echo=FALSE, results='asis'}
+require(car)
+
+indProf <- subset(INDICATOR_DIAGNOSIS_PROFILE,INDICATOR_DIAGNOSIS_PROFILE$ICD10_CHAPTER != "TOTAL")
+indProf$ICD10_CHAPTER <- recode(indProf$ICD10_CHAPTER,"'UNKNOWN'='UNK'" )
+indProf$ICD10_CHAPTER <- with(indProf,factor(ICD10_CHAPTER,levels=c('I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI','UNK'), ordered=TRUE))
+ggplot(indProf,aes(x=indProf$"ICD10_CHAPTER",y=indProf$"PERCENT",axis.title.y="Percent",axis.title.x="ICD10 CHAPTER")) + geom_bar(stat="identity") + labs(title = "Diagnostic distribution by chapter") + xlab("ICD-10 Chapter") + ylab("Frequency (%)")
+
+`````
+
+`r I(pasteLabel("\nFigure", figCount, "Diagnostic distribution by chapter", FALSE))` Diagnostic distribution by chapter.
+
+
+###Data cleanning breakdown###  
+Shows the results of the cleanning process.
+
+```{r message=FALSE, results='asis',echo=FALSE}
+
+tableCount <- incCount(tableCount, "Data Cleanning")
+
+```
+
+`r I(pasteLabel("Table", tableCount, "Data Cleanning", FALSE))` Data Cleanning Totals.
+
+```{r CleanningTotals, message=FALSE, results='asis',echo=FALSE}
+
+INDICATOR_BASE_QUALITY <- transform(INDICATOR_BASE_QUALITY,YEAR=as.numeric(YEAR))
+Totals <- colSums (INDICATOR_BASE_QUALITY, na.rm = FALSE, dims = 1)
+Totals["YEAR"] <- "Totals"
+cat(tableCat(rbind(INDICATOR_BASE_QUALITY,unname(Totals))),sep="\n")
+
+tableCount <- incCount(tableCount, "n Totals")
+```
+
+```{r message=FALSE, results='asis',echo=FALSE}
+
+tableCount <- incCount(tableCount, "Quality Indicators")
+
+```
+
+###Cohort Informations###  
+Summaries of the cohort selection and study parameters.
+
+####Cohort Inclusion/Exclusion breakdown####  
+
+Shows totals for each inclusion/exclusion criteria.  
+
+`r I(pasteLabel("Table", tableCount, "Cohort Selection Totals", FALSE))` Cohort Inclusion Criteria Totals.
+
+```{r message=FALSE, results='asis',echo=FALSE}
+
+tableCount <- incCount(tableCount, "Cohort Selection Totals")
+
+cohortSelection <- COHORT_SELECTION_CRITERIA
+
+colnames(cohortSelection) <- c("PAUA Totals","Age in interval","Selected gender","With selected diagnosis", "At least (n) encounters")
+
+cat(tableCat(cohortSelection), sep = "\n")
+
+figCount <- incCount(figCount, "Population Pyramid")
+
+```
+
+
+####Population Pyramid####  
+Population distribution of the cohort by age and sex.
+
+```{r pyramid, message=FALSE, echo=FALSE}
+require(plotrix)
+require(car)
+
+demog <- merge(COHORT_PATIENT,COHORT_DIAGNOSIS,by="DEIDENTIFIED_ID")
+
+# Recode age intervals
+demog$FAIXA_ETARIA <- recode(demog$AGE_AT_DIAG_Y, 
+  '18:30 = "18 a 29"; 30:40 = "30 a 39"; 40:50 = "40 a 49"; 50:60 = "50 a 59"; 60:70 = "60 a 69"; 70:80 = "70 a 79"; 80:110 = "80 e mais" ; ; ; ;',
+   as.factor.result=TRUE)
+
+xy.pop <- data.frame (table (demog$FAIXA_ETARIA[demog$GENDER=="M" & demog$AGE_AT_DIAG_Y > 17]))
+xx.pop <- data.frame (table (demog$FAIXA_ETARIA[demog$GENDER=="F" & demog$AGE_AT_DIAG_Y > 17]))
+xxy_total = sum(xy.pop$Freq) + sum(xx.pop$Freq)
+
+par(mar=pyramid.plot((xy.pop$Freq * 100)/xxy_total,(xx.pop$Freq * 100)/xxy_total,
+                     main="Population Pyramid",lxcol="blue",rxcol= "pink",
+                     top.labels=c("Male", "Age Range","Female"),
+                     labels=levels(demog$FAIXA_ETARIA),
+                     gap=3,show.values=T))
+```
+
+`r I(pasteLabel("\nFigure", figCount, "Population Pyramid", FALSE))` Population Pyramid.
+
+
+
+```{r message=FALSE, results='asis',echo=FALSE}
+
+tableCount <- incCount(tableCount, "Survival")
+
+```
+
+####Survival Statistics####
+
+`r I(pasteLabel("Tabela", tableCount, "Survival", FALSE))` Survival Table.
+
+```{r message=FALSE,  echo=FALSE}
+require("survival")
+
+  #############
+  # libraries #
+  #############
+  
+  #Check if the following packages have been installed. If not, install them
+  if (!"survival" %in% installed.packages()) install.packages("survival", repos = 'http://cran.us.r-project.org')
+  if (!"grid" %in% installed.packages()) install.packages("grid", repos = 'http://cran.us.r-project.org')
+  if (!"plyr" %in% installed.packages()) install.packages("plyr", repos = 'http://cran.us.r-project.org')
+  
+  suppressPackageStartupMessages(library(survival, warn.conflicts=FALSE))
+  suppressPackageStartupMessages(library(grid, warn.conflicts=FALSE))
+  suppressPackageStartupMessages(library(plyr, warn.conflicts=FALSE))
+  
+  #################################
+  # Survival                      #
+  #################################
+
+SurvivalData <- merge (COHORT_INTERVENTION[c("DEIDENTIFIED_ID","INTERVENTION_FLAG")],COHORT_INDEXEVENT_OUTCOMEEVENT[c("DEIDENTIFIED_ID","DEATH_FLAG","INDEX_OUTCOME_INTERVAL","AGE_AT_INDEX_EVENT")], by=c("DEIDENTIFIED_ID"))
+
+SurvivalData <- merge (SurvivalData,COHORT_ENCOUNTER[c("DEIDENTIFIED_ID","ENCOUNTER_INTERVAL","AGE_LAST_ENCOUNTER")], by=c("DEIDENTIFIED_ID"))
+
+
+SurvivalData <- merge(SurvivalData,COHORT_PATIENT[c("DEIDENTIFIED_ID","AGEYEARS_AT_STUDY_BEGIN", "ESTIM_AGE_AT_STUDY_END")])
+
+SurvivalData <- merge (SurvivalData,COHORT_DEATH[c("DEIDENTIFIED_ID","AGE_AT_DEATH")], by=c("DEIDENTIFIED_ID"),all = TRUE)
+
+# Convert to factor
+#SurvivalData <- within(SurvivalData, {INTERVENTION_FLAG <- as.factor(INTERVENTION_FLAG)})
+
+# Calculate the interval
+#SurvivalData$LSTDATE <- SurvivalData$AGE_LAST_ENCOUNTER 
+
+#SurvivalData$AGE_AT_STUDY_END <- (SurvivalData$ESTIM_AGE_AT_STUDY_END * 365)
+
+#SurvivalData$MIN_DATE <- SurvivalData$AGE_LAST_ENCOUNTER[SurvivalData$AGE_LAST_ENCOUNTER < #SurvivalData$AGE_AT_STUDY_END]
+
+#SurvivalData$LSTDATE[SurvivalData$LSTDATE > (SurvivalData$ESTIM_AGE_AT_STUDY_END - SurvivalData$* 365)] <- (SurvivalData$ESTIM_AGE_AT_STUDY_END[SurvivalData$LSTDATE > (SurvivalData$ESTIM_AGE_AT_STUDY_END * 365)] * 365)
+
+#SurvivalData$LSTDATE[!is.na(SurvivalData$AGE_AT_DEATH)] <- #SurvivalData$AGE_AT_DEATH[!is.na(SurvivalData$AGE_AT_DEATH)]
+
+#SurvivalData$SURVINT <- SurvivalData$LSTDATE - SurvivalData$AGE_AT_INDEX_EVENT
+
+#index <- SurvivalData$SURVINT >= 0
+
+#XSurv <- subset(SurvivalData,index)
+
+#SurvivalData <- subset(SurvivalData,index)
+#summary(SurvivalData)
+#SurvivalData$SURVINT[index] <- 0
+
+# SurvivalData <- subset(SurvivalData,INTERVAL > 0)
+
+names(COHORT_SURVIVAL)[names(COHORT_SURVIVAL)=="INTERVENTION_FLAG"] <- "Intervention"
+SurvivalData <- COHORT_SURVIVAL
+.Survfit <- survfit(Surv(SURVIVAL_INTERVAL, DEATH_FLAG==1) ~ Intervention, conf.type="log-log", conf.int=0.95, na.action = na.omit, type="kaplan-meier", error="greenwood", data=COHORT_SURVIVAL)
+.Survfit
+quantile(.Survfit, probs=c(.25,.5,.75))
+
+figCount <- incCount(figCount, "KaplanMeier")
+
+#survTable <- tableCat(.Survfit)
+#cat(survTable, sep = "\n")
+
+#cat(tableCat(), sep = "\n")
+```
+
+`r I(pasteLabel("\nFigura", figCount, "KaplanMeier", FALSE))` Kaplan-Meier survival curve.
+
+```{r KaplanMeierPlot, echo=FALSE}
+ggkm(.Survfit,timeby=365)
+remove(.Survfit)
+```
+
+
+```{r Statin Demographics, echo=FALSE}
+demographStatin <- merge (COHORT_PATIENT[c("DEIDENTIFIED_ID","GENDER","MARITAL_STATUS","EDUCATION_LEVEL")],COHORT_INTERVENTION[c("DEIDENTIFIED_ID","INTERVENTION_FLAG")], by="DEIDENTIFIED_ID")
+demographStatin <- merge (demographStatin, COHORT_INDEXEVENT_OUTCOMEEVENT[c("DEIDENTIFIED_ID","AGE_AT_INDEX_EVENT")], by="DEIDENTIFIED_ID")
+demographStatin$AGE_AT_INDEX_EVENT <- floor(demographStatin$AGE_AT_INDEX_EVENT/365)
+demographStatin$AGE_RANGE <- recode(as.factor(demographStatin$AGE_AT_INDEX_EVENT), 
+  '18:49 = "18 a 49"; 50:59 = "50 a 59"; 60:69 = "60 a 69"; 70:79 = "70 a 79"; 80:99 = "80 e mais" ; ; ; ;',
+   as.factor.result=TRUE)
+demographStatin$MARITAL_STATUS <- recode(demographStatin$MARITAL_STATUS,'"CASADO"="Married"; "SEPARADO"="Separated"; "DIVORCIADO"="Divorced"; "SOLTEIRO"="Single"; "VIUVO"="Widowed"; "AMASIADO"="Living with a partner";""="Unknow";;;;',as.factor.result=TRUE)
+demographStatin$EDUCATION_LEVEL <- recode(demographStatin$EDUCATION_LEVEL,'"ANALFABETO"="Illiterate"; "1O. GRAU INCOMPLETO (+DE 4 ANOS)"="Basic School Incomplete"; "1O. GRAU INCOMPLETO (ATE 4 ANOS)"="Basic School Incomplete";"1o. GRAU COMPLETO"="Basic School"; "2o. GRAU INCOMPLETO"="High School Incomlpete"; "2o. GRAU COMPLETO"="High School"; "SUPERIOR INCOMPLETO"="Bachelor Incomplete"; "SUPERIOR COMPLETO"="Bachelor";""="Unknow";"IGNORADO"="Unknow";;;',as.factor.result=TRUE)
+demographStatin$EDUCATION_LEVEL <- with(demographStatin, factor(EDUCATION_LEVEL,levels=c("Illiterate","Basic School Incomplete","Basic School","High School Incomlpete","High School","Bachelor Incomplete","Bachelor","Unknow")))
+
+library(abind, pos=27)
+library(e1071, pos=28)
+library(RcmdrMisc)
+
+#MEDIAN AGE INDEX YEAR
+COHORT_INDEXEVENT_OUTCOMEEVENT$AGE_INDEX_YEAR <- 
+  with(COHORT_INDEXEVENT_OUTCOMEEVENT, AGE_AT_INDEX_EVENT/365)
+with(COHORT_INDEXEVENT_OUTCOMEEVENT, (t.test(AGE_INDEX_YEAR, 
+  alternative='two.sided', mu=0.0, conf.level=.95)))
+
+# MEDIAN AGE GENDER
+COHORT_INDEXEVENT_OUTCOMEEVENT <- merge(COHORT_INDEXEVENT_OUTCOMEEVENT, COHORT_PATIENT[c("DEIDENTIFIED_ID","GENDER")],  by=c("DEIDENTIFIED_ID"))
+
+t.test(AGE_INDEX_YEAR~GENDER, alternative='two.sided', conf.level=.95, var.equal=FALSE, data=COHORT_INDEXEVENT_OUTCOMEEVENT)
+
+# GENDER
+local({
+  .Table <- with(demographStatin, table(GENDER))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  chisq.test(.Table, p=.Probs)
+})
+local({
+  .Table <- xtabs(~GENDER+INTERVENTION_FLAG, data=demographStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# AGE_RANGE
+local({
+  .Table <- with(demographStatin, table(AGE_RANGE))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+local({
+  .Table <- xtabs(~AGE_RANGE+INTERVENTION_FLAG, data=demographStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# MARITAL_STATUS
+local({
+  .Table <- with(demographStatin, table(MARITAL_STATUS))
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+local({
+  .Table <- xtabs(~MARITAL_STATUS+INTERVENTION_FLAG, data=demographStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# EDUCATION_LEVEL
+local({
+  .Table <- with(demographStatin, table(EDUCATION_LEVEL))
+#  .Table <- xtabs(~table(EDUCATION_LEVEL), data=demographStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+local({
+  .Table <- xtabs(~EDUCATION_LEVEL+INTERVENTION_FLAG, data=demographStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+```
+
+```{r Statin Risk Factor, echo=FALSE}
+riskfactorStatin <- merge (COHORT_HEART_RISK_FACTOR[c("DEIDENTIFIED_ID","DYSLIPIDEMIA","DIABETES","HYPERTENSION","SMOKING","HYPERTRIGLYCERIDEMIA","PHYSICAL_INACTIVITY")],COHORT_INTERVENTION[c("DEIDENTIFIED_ID","INTERVENTION_FLAG")], by="DEIDENTIFIED_ID")
+
+# DIABETES
+local({
+  .Table <- with(riskfactorStatin, table(DIABETES))
+#  .Table <- xtabs(~table(DIABETES), data=riskfactorStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+local({
+  .Table <- xtabs(~DIABETES+INTERVENTION_FLAG, data=riskfactorStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# DYSLIPIDEMIA
+local({
+  .Table <- with(riskfactorStatin, table(DYSLIPIDEMIA))
+#  .Table <- xtabs(~table(DYSLIPIDEMIAL), data=riskfactorStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+local({
+  .Table <- xtabs(~DYSLIPIDEMIA+INTERVENTION_FLAG, data=riskfactorStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# HYPERTENSION
+local({
+  .Table <- with(riskfactorStatin, table(HYPERTENSION))
+#  .Table <- xtabs(~table(HYPERTENSION), data=riskfactorStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+local({
+  .Table <- xtabs(~HYPERTENSION+INTERVENTION_FLAG, data=riskfactorStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# SMOKING
+local({
+  .Table <- with(riskfactorStatin, table(SMOKING))
+#  .Table <- xtabs(~table(SMOKING), data=riskfactorStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+local({
+  .Table <- xtabs(~SMOKING+INTERVENTION_FLAG, data=riskfactorStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# HYPERTRIGLYCERIDEMIA
+local({
+  .Table <- with(riskfactorStatin, table(HYPERTRIGLYCERIDEMIA))
+#  .Table <- xtabs(~table(HYPERTRIGLYCERIDEMIAL), data=riskfactorStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+local({
+  .Table <- xtabs(~HYPERTRIGLYCERIDEMIA+INTERVENTION_FLAG, data=riskfactorStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# PHYSICAL_INACTIVITY
+local({
+  .Table <- with(riskfactorStatin, table(PHYSICAL_INACTIVITY))
+#  .Table <- xtabs(~table(EPHYSICAL_INACTIVITY), data=riskfactorStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+local({
+  .Table <- xtabs(~PHYSICAL_INACTIVITY+INTERVENTION_FLAG, data=riskfactorStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+```
+
+```{r Statin Outcome, echo=FALSE}
+outcomeStatin <- merge (COHORT_INDEXEVENT_OUTCOMEEVENT[c("DEIDENTIFIED_ID","OUTCOME_REASON","OUTCOME_FLAG","DEATH_FLAG","PCI_FLAG","SURGERY_FLAG","SCND_DIAG_FLAG","ICD10_CATEGORY","AGE_AT_INDEX_EVENT")],COHORT_INTERVENTION[c("DEIDENTIFIED_ID","INTERVENTION_FLAG")], by="DEIDENTIFIED_ID")
+
+outcomeStatin$OUTCOME_REASON <- recode(outcomeStatin$OUTCOME_REASON,'"DIAG"="Subsequent diagnosis"; "DEATH"="Death";"SURGERY"="CABG"; ""="They had no evolutionary event";;;;',as.factor.result=TRUE)
+
+outcomeStatin$OUTCOME_REASON <- with(outcomeStatin, factor(OUTCOME_REASON,levels=c("They had no evolutionary event","Subsequent diagnosis","PCI","CABG","Death")))
+
+# AGE INDEX EVENT
+# with(outcomeStatin, (t.test(AGE_AT_INDEX_EVENT, alternative='two.sided', 
+#  mu=0.0, conf.level=.95)))
+
+# AGE_MEAN
+outcomeStatin$AGE_FRIST_EVENT_Y <- with(outcomeStatin, 
+  AGE_AT_INDEX_EVENT/365)
+
+with(outcomeStatin, (t.test(AGE_FRIST_EVENT_Y, alternative='two.sided', 
+  mu=0.0, conf.level=.95)))
+
+#AGE_MEAN_INTERVENTION
+outcomeStatin <- within(outcomeStatin, {
+  INTERVENTION_FLAG <- as.factor(INTERVENTION_FLAG)
+})
+t.test(AGE_FRIST_EVENT_Y~INTERVENTION_FLAG, alternative='two.sided', 
+  conf.level=.95, var.equal=FALSE, data=outcomeStatin)
+
+# OUTCOME_REASON
+local({
+  .Table <- with(outcomeStatin, table(OUTCOME_REASON))
+#  .Table <- xtabs(~table(OUTCOME_REASON), data=outcomeStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+local({
+  .Table <- xtabs(~OUTCOME_REASON+INTERVENTION_FLAG, data=outcomeStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# ICD10_CATEGORY
+local({
+  .Table <- with(outcomeStatin, table(ICD10_CATEGORY))
+#  .Table <- xtabs(~table(ICD10_CATEGORY), data=outcomeStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+local({
+  .Table <- xtabs(~ICD10_CATEGORY+INTERVENTION_FLAG, data=outcomeStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# DEATH_FLAG
+local({
+  .Table <- with(outcomeStatin, table(DEATH_FLAG))
+#  .Table <- xtabs(~table(DEATH_FLAG), data=outcomeStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+local({
+  .Table <- xtabs(~DEATH_FLAG+INTERVENTION_FLAG, data=outcomeStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# PCI_FLAG
+local({
+  .Table <- with(outcomeStatin, table(PCI_FLAG))
+#  .Table <- xtabs(~table(PCI_FLAG), data=outcomeStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+local({
+  .Table <- xtabs(~PCI_FLAG+INTERVENTION_FLAG, data=outcomeStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# SURGERY_FLAG
+local({
+  .Table <- with(outcomeStatin, table(SURGERY_FLAG))
+#  .Table <- xtabs(~table(SURGERY_FLAG), data=outcomeStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+local({
+  .Table <- xtabs(~SURGERY_FLAG+INTERVENTION_FLAG, data=outcomeStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+# SCND_DIAG_FLAG
+local({
+  .Table <- with(outcomeStatin, table(SCND_DIAG_FLAG))
+#  .Table <- xtabs(~table(SCND_DIAG_FLAG), data=outcomeStatin)
+  cat("\ncounts:\n")
+  print(.Table)
+  cat("\npercentages:\n")
+  print(round(100*.Table/sum(.Table), 2))
+  .Probs <- c(0.5,0.5) 
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+local({
+  .Table <- xtabs(~SCND_DIAG_FLAG+INTERVENTION_FLAG, data=outcomeStatin)
+  cat("\nFrequency table:\n")
+  print(.Table)
+  cat("\nTotal percentages:\n")
+  print(totPercents(.Table))
+  .Test <- chisq.test(.Table, correct=FALSE)
+  print(.Test)
+})
+
+
+#
+library(ggplot2)
+COHORT_OVERALL_DBPOP_GENDER$GENDER <- recode(COHORT_OVERALL_DBPOP_GENDER$GENDER,'"F"="Female";"M"="Male"',as.factor.result=TRUE )
+ggplot(COHORT_OVERALL_DBPOP_GENDER,aes(GENDER,PERCENT,fill=POPULATION))+
+  geom_bar(stat="identity",position="dodge")
+
+```
+
+```{r CoronarySurgery,echo=FALSE, results='asis'}
+#COHORT_SURGERY <- within(COHORT_SURGERY, {
+#  SPECIALITY <- recode(SURGICAL_SPECIALITY_1,
+#      'CCOR="CORONARY"; CCON="CONGENITAL HEART DEFECTS"; CMPA="PACING ARTIFICIAL HEART"; CVAL="HEART VALVE"; CGER="GENERAL SURGERY"; TNCA="TORACIC SURGERY"; CVAS="VASCULAR"; CCAG="CARDIOLOGY GENERAL"; ',as.factor.result=TRUE)
+#  })
+
+```
+
+```{r pandoc,echo=FALSE, results='asis'}
+#  library(xtable)
+#  data(tli)
+#  print(xtable(tli[1:20, ]),type='html',comment=FALSE)
+
+
+# for pdf (you need to have latex installed)
+# system( "pandoc example.md -o example.pdf")
+
+# for syntax-highlight persistant html
+# system("pandoc example.md -o example.html -s -S")
+
+options(warn = oldw)
+```
