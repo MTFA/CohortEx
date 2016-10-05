@@ -3912,6 +3912,7 @@ FROM
        WHEN "GENDER" = 'FEMININO'   THEN '002' 
        WHEN "GENDER" = 'INDEFINIDO' THEN '003' 
        WHEN "GENDER" = 'OUTROS'     THEN '004' 
+       WHEN "GENDER" = 'Total'      THEN '005'
        ELSE "GENDER"
     END
 ;
@@ -3952,6 +3953,7 @@ FROM
        WHEN "Género" = 'FEMININO'   THEN '002' 
        WHEN "Género" = 'INDEFINIDO' THEN '003' 
        WHEN "Género" = 'OUTROS'     THEN '004' 
+       WHEN "Género" = 'Total'      THEN '005'
        ELSE "Género"
     END
 ;
@@ -3993,8 +3995,11 @@ FROM
     )
 ) ORDER BY 
     CASE 
-       WHEN "GENDER" = 'MASCULINO' THEN '001' 
-       WHEN "GENDER" = 'FEMININO'  THEN '002' 
+       WHEN "GENDER" = 'MASCULINO'  THEN '001' 
+       WHEN "GENDER" = 'FEMININO'   THEN '002' 
+       WHEN "GENDER" = 'INDEFINIDO' THEN '003' 
+       WHEN "GENDER" = 'OUTROS'     THEN '004' 
+       WHEN "GENDER" = 'Total'      THEN '005'
        ELSE "GENDER"
     END
 ;
@@ -4037,8 +4042,11 @@ FROM
     )
 ) ORDER BY 
     CASE 
-       WHEN "Género" = 'MASCULINO' THEN '001' 
-       WHEN "Género" = 'FEMININO'  THEN '002' 
+       WHEN "Género" = 'MASCULINO'  THEN '001' 
+       WHEN "Género" = 'FEMININO'   THEN '002' 
+       WHEN "Género" = 'INDEFINIDO' THEN '003' 
+       WHEN "Género" = 'OUTROS'     THEN '004' 
+       WHEN "Género" = 'Total'      THEN '005'
        ELSE "Género"
     END
 ;
