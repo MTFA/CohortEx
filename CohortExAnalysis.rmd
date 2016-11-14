@@ -86,6 +86,11 @@ insertRow2 <- function(df, r, p) {
 ```
 
 ```{r loadCohortTable, message=FALSE,echo=FALSE}
+  if (Sys.info()['sysname'] == 'Darwin') {
+    libjvm <- paste0(system2('/usr/libexec/java_home',stdout = TRUE)[1],'/jre/lib/server/libjvm.dylib')
+    message (paste0('Load libjvm.dylib from: ',libjvm))
+    dyn.load(libjvm)
+  }
   if (!"RJDBC" %in% installed.packages()) install.packages("RJDBC", repos = 'http://cran.us.r-project.org')
   suppressPackageStartupMessages(library(RJDBC, warn.conflicts=FALSE))
 
@@ -110,7 +115,8 @@ loadCohortTable <- function(connection, tableName,query){
     }
     
     # Load Java
-    options(java.parameters="-Xss512M -Xms512M -Xmx1024M -d64")
+    # options(java.parameters="-Xss512M -Xms512M -Xmx1024M -d64")
+    options(java.parameters="-Xmx1024M")
     library(rJava)
     
    # Output JAVA_HOME
@@ -122,7 +128,8 @@ loadCohortTable <- function(connection, tableName,query){
     message ('It seems ok.')
           
     # Load RJDBC library
-    options(java.parameters="-Xss512M -Xms512M -Xmx1536M -d64")
+    # options(java.parameters="-Xss512M -Xms512M -Xmx1536M -d64")
+    options(java.parameters="-Xmx1536M")
     library(RJDBC)
     
     # Create connection driver and open connection
