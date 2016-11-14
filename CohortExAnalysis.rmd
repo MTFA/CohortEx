@@ -484,6 +484,14 @@ is.rstudio = function(){
 }
 
 require(RJDBC)
+# set the working directory to the one with jdbc driver folder
+# so database can be accessed
+# Mac Tereza
+setwd("/Users/tereza/Dropbox/CoortEx")
+# aCER tEREZA
+# setwd("C:/Users/Tereza/Dropbox/CoortEx")
+# Mac Pablo
+#setwd("~/Public/Drop Box/Dropbox/CoortEx")
 # Load COHORT TABLES
 # Do not waste time loading data form database or from files 
 # if we are on RStudio and are already loaded.
