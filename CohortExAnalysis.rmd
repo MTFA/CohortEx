@@ -108,119 +108,119 @@ insertRow2 <- function(df, r, p) {
 # Read the file in an R object before calling this function and pass it as connection parameter.
 
 loadCohortTable <- function(connection, tableName,query){
-    message("-------------------------LOAD COHORT TABLE FUNCTION-----------------------------")
-    
-    if (missing(query)) {
-      query <- paste0("SELECT * FROM ",tableName)
-    }
-    
-    # Load Java
-    # options(java.parameters="-Xss512M -Xms512M -Xmx1024M -d64")
-    options(java.parameters="-Xmx1024M")
-    library(rJava)
-    
-   # Output JAVA_HOME
-    message (paste0('Verifying Java, JAVA_HOME = ',JAVA_HOME))
-   
-    # Output Java version
-    .jinit()
-    message(paste0("Java version: ",.jcall("java/lang/System", "S", "getProperty", "java.version")))
-    message ('It seems ok.')
-          
-    # Load RJDBC library
-    # options(java.parameters="-Xss512M -Xms512M -Xmx1536M -d64")
-    options(java.parameters="-Xmx1536M")
-    library(RJDBC)
-    
-    # Create connection driver and open connection
-    # For other databases, change next line accordling
-    jdbcDriver <- JDBC(driverClass="oracle.jdbc.OracleDriver", classPath="driverJDBC/ojdbc6.jar")
-    message(paste0('Connection url (database.hostname.com:port/service_name_or_sid): ',connection$host_port_sid))
-    
-    message(paste0('Connection user: ',connection$username))
-    jdbcConnection <- dbConnect(jdbcDriver, connection$host_port_sid, connection$username, connection$password)
-     
-    # Query on the Oracle instance name.
-    instanceName <- dbGetQuery(jdbcConnection, "select sys_context('USERENV','INSTANCE_NAME') from dual")
-    message(paste0("Checking access to the database, querying for the instance name: ",instanceName))
-    
-    # Read COHORT_PATIENT
-    message(paste0("Trying to read the following table: ", tableName))
-    
-    # Read table with data
-    res<-dbSendQuery(jdbcConnection,query)
-                  
-    START_LOAD <- proc.time()
-    
-    result<-list()
-    i=1
-    pb <- txtProgressBar(1,70,style=1, char = ".")
-    result[[i]]<-fetch(res,n=1000)
-    setTxtProgressBar(pb, i)
-    while(nrow(chunk <- fetch(res, n = 1000))>0){
-          i<-i+1
-          result[[i]]<-chunk
-          setTxtProgressBar(pb, i)
-          }
-    close(pb)
-    
-    END_LOAD <- proc.time()
-    message(paste0("End reading table. Time spent: ",round((END_LOAD - START_LOAD)["elapsed"],2)," seg. to read: ",i," chuncks of 1000 rows each."))
-    
-    START_BIND <- proc.time()    
-    COHORT_TABLE<-do.call(rbind,result)
-    END_BIND <- proc.time()
-
-    message(paste0("Time spent to bind: ",round((END_BIND - START_BIND)["elapsed"],2)," seg."))
-    
-    #Read table comments
-    message("Read table comments...")
-    # cpTableComment <-list()
-    # tableCommentQuery <- paste0("SELECT MVIEW_NAME AS TABLE_NAME, COMMENTS FROM USER_MVIEW_COMMENTS WHERE MVIEW_NAME = '",connection$tablename,"'")
-    # cpTableComment <- dbGetQuery(jdbcConnection,tableCommentQuery)
-    
-    
-    #Read columns comments
-    message("Read column comments...")
-    # cpResultColumns <- list()
-    # columnCommentQuery <- paste0("SELECT COLUMN_NAME,COMMENTS FROM USER_COL_COMMENTS WHERE TABLE_NAME='",connection$tablename,"'")
-    # resCol <- dbSendQuery(jdbcConnection,columnCommentQuery)
-    
-    # resultColumns<-list()
-    # j=1
-    # pbC <- txtProgressBar(1,10,style=1, char = ".")
-    # resultColumns[[j]]<-fetch(resCol,n=50)
-    # setTxtProgressBar(pbC, j)
-    # while(nrow(chunk <- fetch(resCol, n = 50))>0){
-    #       j<-j+1
-    #       resultColumns[[j]]<-chunk
-    #       setTxtProgressBar(pbC, j)
-    #       }
-    # close(pbC)
+  message("-------------------------LOAD COHORT TABLE FUNCTION-----------------------------")
   
-    # Close connection
-    # dbDisconnect(jdbcConnection)
-    
-    # columnComment <- do.call(rbind,resultColumns)
-    #Save data to csv file
-    message(paste0("Data succsesfully read from table on Oracle database. Saving to ",tableName,".csv file"))
-    START_SAVE <- proc.time()
-    write.table(COHORT_TABLE,        file = paste0(tableName,".csv"),row.names=FALSE, na="", quote = TRUE, sep = ";")
-    # write.table(cpTableComment,  file = "tableComment.csv",row.names=FALSE, na="", quote = TRUE, sep = ";")
-    # write.table(cpColumnComment, file = "columnComment.csv",row.names=FALSE, na="", quote = TRUE, sep = ";")
-    END_SAVE <- proc.time()
-    message (paste0("Data from table : ", tableName, " successfully read from database and write to ", tableName, ".csv file in: ",round((END_SAVE - START_SAVE)["elapsed"],2), " seg."))
-    
-    # Close connection
-    dbDisconnect(jdbcConnection)
-    
-    # tableCommentQuery,columnCommentQuery,pb,pbC,res,resCol,result,resultColumns,j
-    rm(jdbcConnection,jdbcDriver,query,i,chunk,instanceName,START_BIND,END_BIND,START_LOAD,END_LOAD,START_SAVE,END_SAVE)
-    
-#    detach("package:RJDBC", unload=TRUE)
-
-#    detach("package:rJava", unload=TRUE)
-
+  if (missing(query)) {
+    query <- paste0("SELECT * FROM ",tableName)
+  }
+  
+  # Load Java
+  # options(java.parameters="-Xss512M -Xms512M -Xmx1024M -d64")
+  options(java.parameters="-Xmx1024M")
+  library(rJava)
+  
+  # Output JAVA_HOME
+  message (paste0('Verifying Java, JAVA_HOME = ',JAVA_HOME))
+  
+  # Output Java version
+  .jinit()
+  message(paste0("Java version: ",.jcall("java/lang/System", "S", "getProperty", "java.version")))
+  message ('It seems ok.')
+  
+  # Load RJDBC library
+  # options(java.parameters="-Xss512M -Xms512M -Xmx1536M -d64")
+  options(java.parameters="-Xmx1536M")
+  library(RJDBC)
+  
+  # Create connection driver and open connection
+  # For other databases, change next line accordling
+  jdbcDriver <- JDBC(driverClass="oracle.jdbc.OracleDriver", classPath="driverJDBC/ojdbc6.jar")
+  message(paste0('Connection url (database.hostname.com:port/service_name_or_sid): ',connection$host_port_sid))
+  
+  message(paste0('Connection user: ',connection$username))
+  jdbcConnection <- dbConnect(jdbcDriver, connection$host_port_sid, connection$username, connection$password)
+  
+  # Query on the Oracle instance name.
+  instanceName <- dbGetQuery(jdbcConnection, "select sys_context('USERENV','INSTANCE_NAME') from dual")
+  message(paste0("Checking access to the database, querying for the instance name: ",instanceName))
+  
+  # Read COHORT_PATIENT
+  message(paste0("Trying to read the following table: ", tableName))
+  
+  # Read table with data
+  res<-dbSendQuery(jdbcConnection,query)
+  
+  START_LOAD <- proc.time()
+  
+  result<-list()
+  i=1
+  pb <- txtProgressBar(1,70,style=1, char = ".")
+  result[[i]]<-fetch(res,n=1000)
+  setTxtProgressBar(pb, i)
+  while(nrow(chunk <- fetch(res, n = 1000))>0){
+    i<-i+1
+    result[[i]]<-chunk
+    setTxtProgressBar(pb, i)
+  }
+  close(pb)
+  
+  END_LOAD <- proc.time()
+  message(paste0("End reading table. Time spent: ",round((END_LOAD - START_LOAD)["elapsed"],2)," seg. to read: ",i," chuncks of 1000 rows each."))
+  
+  START_BIND <- proc.time()    
+  COHORT_TABLE<-do.call(rbind,result)
+  END_BIND <- proc.time()
+  
+  message(paste0("Time spent to bind: ",round((END_BIND - START_BIND)["elapsed"],2)," seg."))
+  
+  #Read table comments
+  message("Read table comments...")
+  # cpTableComment <-list()
+  # tableCommentQuery <- paste0("SELECT MVIEW_NAME AS TABLE_NAME, COMMENTS FROM USER_MVIEW_COMMENTS WHERE MVIEW_NAME = '",connection$tablename,"'")
+  # cpTableComment <- dbGetQuery(jdbcConnection,tableCommentQuery)
+  
+  
+  #Read columns comments
+  message("Read column comments...")
+  # cpResultColumns <- list()
+  # columnCommentQuery <- paste0("SELECT COLUMN_NAME,COMMENTS FROM USER_COL_COMMENTS WHERE TABLE_NAME='",connection$tablename,"'")
+  # resCol <- dbSendQuery(jdbcConnection,columnCommentQuery)
+  
+  # resultColumns<-list()
+  # j=1
+  # pbC <- txtProgressBar(1,10,style=1, char = ".")
+  # resultColumns[[j]]<-fetch(resCol,n=50)
+  # setTxtProgressBar(pbC, j)
+  # while(nrow(chunk <- fetch(resCol, n = 50))>0){
+  #       j<-j+1
+  #       resultColumns[[j]]<-chunk
+  #       setTxtProgressBar(pbC, j)
+  #       }
+  # close(pbC)
+  
+  # Close connection
+  # dbDisconnect(jdbcConnection)
+  
+  # columnComment <- do.call(rbind,resultColumns)
+  #Save data to csv file
+  message(paste0("Data succsesfully read from table on Oracle database. Saving to ",tableName,".csv file"))
+  START_SAVE <- proc.time()
+  write.table(COHORT_TABLE,        file = paste0(tableName,".csv"),row.names=FALSE, na="", quote = TRUE, sep = ";")
+  # write.table(cpTableComment,  file = "tableComment.csv",row.names=FALSE, na="", quote = TRUE, sep = ";")
+  # write.table(cpColumnComment, file = "columnComment.csv",row.names=FALSE, na="", quote = TRUE, sep = ";")
+  END_SAVE <- proc.time()
+  message (paste0("Data from table : ", tableName, " successfully read from database and write to ", tableName, ".csv file in: ",round((END_SAVE - START_SAVE)["elapsed"],2), " seg."))
+  
+  # Close connection
+  dbDisconnect(jdbcConnection)
+  
+  # tableCommentQuery,columnCommentQuery,pb,pbC,res,resCol,result,resultColumns,j
+  rm(jdbcConnection,jdbcDriver,query,i,chunk,instanceName,START_BIND,END_BIND,START_LOAD,END_LOAD,START_SAVE,END_SAVE)
+  
+  #    detach("package:RJDBC", unload=TRUE)
+  
+  #    detach("package:rJava", unload=TRUE)
+  
   return(COHORT_TABLE)
 }
 ```
@@ -381,7 +381,7 @@ ggkm <- function(sfit,
     theme(panel.grid.minor = element_blank()) +
     # MOVE LEGEND HERE BELOW [first is x dim, second is y dim]
     theme(legend.position = c(ifelse(m < 10, .35, .25),ifelse(d < 4, .35, .3))) +
-#    theme(legend.position = c(ifelse(m < 10, .85, .75),ifelse(d < 4, .85, .8))) +
+    #    theme(legend.position = c(ifelse(m < 10, .85, .75),ifelse(d < 4, .85, .8))) +
     theme(legend.key = element_rect(colour = NA)) +
     theme(panel.border = element_blank()) +
     labs(linetype = ystrataname) +
@@ -409,7 +409,7 @@ ggkm <- function(sfit,
   #####################a
   
   if(length(levels(summary(sfit)$strata)) == 0) pval <- FALSE
-    
+  
   if(pval == TRUE) {
     sdiff <- survdiff(eval(sfit$call$formula), data = eval(sfit$call$data))
     pvalue <- pchisq(sdiff$chisq,length(sdiff$n) - 1,lower.tail = FALSE)
@@ -456,7 +456,7 @@ ggkm <- function(sfit,
     #######################
     # Plotting the graphs #
     #######################
-
+    
     grid.arrange(p, blank.pic, data.table, clip = FALSE, nrow = 3,
                  ncol = 1, heights = unit(c(2, .1, .25),c("null", "null", "null")))
     
@@ -499,13 +499,13 @@ if (!is.rstudio() || !exists("COHORT_PCI",inherits = TRUE)) {
   message ('Data not loaded. Will try to load from: ', appendLF = FALSE)
   message (paste0(getwd(),'/cohort_patient.csv'))
   if (file.exists('cohort_patient.csv'))
-    {
+  {
     message ('Reading COHORT_DEATH.csv. ', appendLF = TRUE)
     COHORT_DEATH     <- read.table("COHORT_DEATH.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
     
     message ('Reading COHORT_DIAGNOSIS.csv. ', appendLF = TRUE)
     COHORT_DIAGNOSIS <- read.table("COHORT_DIAGNOSIS.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading COHORT_DRUGS.csv. ', appendLF = TRUE)
     COHORT_DRUGS                 <- read.table("COHORT_DRUGS.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
     
@@ -523,10 +523,10 @@ if (!is.rstudio() || !exists("COHORT_PCI",inherits = TRUE)) {
     
     message ('Reading COHORT_INDEXEVENT_OUTCOMEEVENT.csv. ', appendLF = TRUE)
     COHORT_INDEXEVENT_OUTCOMEEVENT <- read.table("COHORT_INDEXEVENT_OUTCOMEEVENT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading COHORT_INTERVENTION.csv. ', appendLF = TRUE)
     COHORT_INTERVENTION           <- read.table("COHORT_INTERVENTION.csv", header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading COHORT_LABTEST_TRANSPOSED.csv. ', appendLF = TRUE)
     COHORT_LABTEST_TRANSPOSED    <- read.table("COHORT_LABTEST_TRANSPOSED.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
     
@@ -535,13 +535,13 @@ if (!is.rstudio() || !exists("COHORT_PCI",inherits = TRUE)) {
     
     message ('Reading COHORT_PATIENT.csv. ', appendLF = TRUE)
     COHORT_PATIENT <- read.table("COHORT_PATIENT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading COHORT_PCI.csv. ', appendLF = TRUE)
     COHORT_PCI     <- read.table("COHORT_PCI.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading COHORT_SELECTION_CRITERIA.csv. ', appendLF = TRUE)
     COHORT_SELECTION_CRITERIA    <- read.table("COHORT_SELECTION_CRITERIA.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading COHORT_SURGERY.csv. ', appendLF = TRUE)
     COHORT_SURGERY   <- read.table("COHORT_SURGERY.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
     
@@ -560,166 +560,166 @@ if (!is.rstudio() || !exists("COHORT_PCI",inherits = TRUE)) {
     
     message ('Reading INDICATOR_DIAGNOSIS_PROFILE.csv. ', appendLF = TRUE)
     INDICATOR_DIAGNOSIS_PROFILE    <- read.table("INDICATOR_DIAGNOSIS_PROFILE.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading INDICATOR_DIAGNOSIS_PROFILE_PT.csv. ', appendLF = TRUE)
     INDICATOR_DIAGNOSIS_PROFILE_PT    <- read.table("INDICATOR_DIAGNOSIS_PROFILE_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading INDICATOR_ICD10_CONFORMITY.csv. ', appendLF = TRUE)
     INDICATOR_ICD10_CONFORMITY    <- read.table("INDICATOR_ICD10_CONFORMITY.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading INDICATOR_ICD10_CONFORMITY_PT.csv. ', appendLF = TRUE)
     INDICATOR_ICD10_CONFORMITY_PT    <- read.table("INDICATOR_ICD10_CONFORMITY_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading INDICATOR_PATIENT.csv. ', appendLF = TRUE)
     INDICATOR_PATIENT    <- read.table("INDICATOR_PATIENT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading INDICATOR_PATIENT_PT.csv. ', appendLF = TRUE)
     INDICATOR_PATIENT_PT    <- read.table("INDICATOR_PATIENT_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading INDICATOR_PATIENT_GENDER.csv. ', appendLF = TRUE)
     INDICATOR_PATIENT_GENDER    <- read.table("INDICATOR_PATIENT_GENDER.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading INDICATOR_PATIENT_GENDER_PT.csv. ', appendLF = TRUE)
     INDICATOR_PATIENT_GENDER_PT    <- read.table("INDICATOR_PATIENT_GENDER_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading INDICATOR_SURGERY.csv. ', appendLF = TRUE)
     INDICATOR_SURGERY    <- read.table("INDICATOR_SURGERY.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading INDICATOR_SURGERY_PT.csv. ', appendLF = TRUE)
     INDICATOR_SURGERY_PT    <- read.table("INDICATOR_SURGERY_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading PAUA_TOTALS.csv. ', appendLF = TRUE)
     PAUA_TOTALS    <- read.table("PAUA_TOTALS.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     message ('Reading PAUA_TOTALS_PT.csv. ', appendLF = TRUE)
     PAUA_TOTALS_PT    <- read.table("PAUA_TOTALS_PT.csv",     header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
     
     
     message ('Files read. ', appendLF = TRUE)
     # cpTableComment  <- read.table("cpTableComment.csv",  header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
     # cpColumnComment <- read.table("cpColumnComment.csv", header=TRUE, sep=";", na.strings="NA", dec=".", strip.white=TRUE)
-
+    
+  } else {
+    message (paste0('File cohort_patient.csv does not exists in the current working directory which is: ', getwd()))
+    message ('Trying to download from Oracle Database.')
+    message ('You must be connected by a VPN or in the same network.')
+    #     Set the JAVA_HOME environment variable or comment the next line to rely on a JAVA_HOME already set
+    #     On Mac OS X, install legacy Java 6 at https://support.apple.com/kb/DL1572, if you got problems 
+    Sys.setenv(JAVA_HOME='/Library/Java/Home/')
+    JAVA_HOME <- Sys.getenv('JAVA_HOME')
+    if (JAVA_HOME == '' )
+    {
+      message ('JAVA_HOME is not set.')
+      message ('Please, verify if Java is installed and set the JAVA_HOME environment variable on your computer')
     } else {
-      message (paste0('File cohort_patient.csv does not exists in the current working directory which is: ', getwd()))
-      message ('Trying to download from Oracle Database.')
-      message ('You must be connected by a VPN or in the same network.')
-#     Set the JAVA_HOME environment variable or comment the next line to rely on a JAVA_HOME already set
-#     On Mac OS X, install legacy Java 6 at https://support.apple.com/kb/DL1572, if you got problems 
-      Sys.setenv(JAVA_HOME='/Library/Java/Home/')
-      JAVA_HOME <- Sys.getenv('JAVA_HOME')
-      if (JAVA_HOME == '' )
+      
+      # Go ahead and try to load driver
+      if(file.exists("driverJDBC/ojdbc6.jar")) 
+      {
+        message(paste0('Driver ojdbc6.jar found at : ', getwd(),'/driverJDBC/ folder'))
+        message('Trying to load connection.txt parameters file')
+        
+        #Are connection settings (user/password) available?
+        if (file.exists('driverJDBC/connection.csv')) 
         {
-        message ('JAVA_HOME is not set.')
-        message ('Please, verify if Java is installed and set the JAVA_HOME environment variable on your computer')
-        } else {
           
-          # Go ahead and try to load driver
-          if(file.exists("driverJDBC/ojdbc6.jar")) 
-            {
-            message(paste0('Driver ojdbc6.jar found at : ', getwd(),'/driverJDBC/ folder'))
-            message('Trying to load connection.txt parameters file')
-            
-            #Are connection settings (user/password) available?
-            if (file.exists('driverJDBC/connection.csv')) 
-              {
-
-              #Load connection parameters
-              connection <- read.table("driverJDBC/connection.csv", header=TRUE, sep=";", strip.white=TRUE, stringsAsFactors=FALSE )
-              
-
-              COHORT_DEATH                    <- loadCohortTable(connection,'COHORT_DEATH')
-              COHORT_DIAGNOSIS                <- loadCohortTable(connection,'COHORT_DIAGNOSIS')
-              COHORT_DRUGS                    <- loadCohortTable(connection,'COHORT_DRUGS')
-              COHORT_DRUGS_DETAIL             <- loadCohortTable(connection,'COHORT_DRUGS_DETAIL')
-              COHORT_ENCOUNTER                <- loadCohortTable(connection,'COHORT_ENCOUNTER')
-
-              query = "SELECT DEIDENTIFIED_ID
-                    , AGE_FIRST_OUTP_ENCOUNTER
-                    , SYMPTOM_CODE, SYMPTOM_DESCRIPTION
-                    , SYMPTOM_DURATION
-                FROM COHORT_FRST_OUTPAT_ENCOUNTER"
-              COHORT_FRST_OUTPAT_ENCOUNTER    <- loadCohortTable(connection,'COHORT_FRST_OUTPAT_ENCOUNTER', query)
-
-              COHORT_HEART_RISK_FACTOR        <- loadCohortTable(connection,'COHORT_HEART_RISK_FACTOR')
-              COHORT_INDEXEVENT_OUTCOMEEVENT  <- loadCohortTable(connection,'COHORT_INDEXEVENT_OUTCOMEEVENT')
-              COHORT_INTERVENTION             <- loadCohortTable(connection,'COHORT_INTERVENTION')
-              COHORT_LABTEST_TRANSPOSED       <- loadCohortTable(connection,'COHORT_LABTEST_TRANSPOSED')
-              COHORT_OVERALL_DBPOP_GENDER       <- loadCohortTable(connection,'COHORT_OVERALL_DBPOP_GENDER')
-              
-              COHORT_PATIENT                  <- loadCohortTable(connection,'COHORT_PATIENT')
-              COHORT_PCI                      <- loadCohortTable(connection,'COHORT_PCI')
-              COHORT_SELECTION_CRITERIA       <- loadCohortTable(connection,'COHORT_SELECTION_CRITERIA')
-
-              query = "SELECT DEIDENTIFIED_ID, ICD10_FIRST_SURGERY, AGE_FIRST_SURGERY
-                    , ICD10_LAST_SURGERY, AGE_LAST_SURGERY
-                    , SURGERY_INTERVAL, SURGERY_QUANTITY
-                    , AGE_SURGERY_1, WEIGHT_1, HEIGHT_1, ICD10_1, SURGICAL_SPECIALITY_1
-                    , AGE_SURGERY_2, WEIGHT_2, HEIGHT_2, ICD10_2, SURGICAL_SPECIALITY_2
-                    , AGE_SURGERY_3, WEIGHT_3, HEIGHT_3, ICD10_3, SURGICAL_SPECIALITY_3
-                    , AGE_SURGERY_4, WEIGHT_4, HEIGHT_4, ICD10_4, SURGICAL_SPECIALITY_4
-                FROM COHORT_SURGERY"
-              COHORT_SURGERY                  <- loadCohortTable(connection,'COHORT_SURGERY', query)
-              COHORT_SURVIVAL                 <- loadCohortTable(connection,'COHORT_SURVIVAL')
-              
-              
-              INDICATOR_ENCOUNTER_GENDER      <- loadCohortTable(connection,'INDICATOR_ENCOUNTER_GENDER')
-              INDICATOR_ENCOUNTER_GENDER_PT   <- loadCohortTable(connection,'INDICATOR_ENCOUNTER_GENDER_PT')
-              
-              INDICATOR_BASE_QUALITY          <- loadCohortTable(connection,'INDICATOR_BASE_QUALITY')
-              INDICATOR_DIAGNOSIS_PROFILE     <- loadCohortTable(connection,'INDICATOR_DIAGNOSIS_PROFILE')
-              INDICATOR_DIAGNOSIS_PROFILE_PT  <- loadCohortTable(connection,'INDICATOR_DIAGNOSIS_PROFILE_PT')
-              
-              INDICATOR_ICD10_CONFORMITY      <- loadCohortTable(connection,'INDICATOR_ICD10_CONFORMITY')
-              INDICATOR_ICD10_CONFORMITY_PT   <- loadCohortTable(connection,'INDICATOR_ICD10_CONFORMITY_PT')
-              
-              INDICATOR_PATIENT               <- loadCohortTable(connection,'INDICATOR_PATIENT')
-              INDICATOR_PATIENT_PT            <- loadCohortTable(connection,'INDICATOR_PATIENT_PT')
-              
-              INDICATOR_PATIENT_GENDER        <- loadCohortTable(connection,'INDICATOR_PATIENT_GENDER')
-              INDICATOR_PATIENT_GENDER_PT     <- loadCohortTable(connection,'INDICATOR_PATIENT_GENDER_PT')
-              
-              INDICATOR_SURGERY               <- loadCohortTable(connection,'INDICATOR_SURGERY')
-              INDICATOR_SURGERY_PT            <- loadCohortTable(connection,'INDICATOR_SURGERY_PT')
-
-              PAUA_TOTALS                     <- loadCohortTable(connection,'PAUA_TOTALS')
-              PAUA_TOTALS_PT                  <- loadCohortTable(connection,'PAUA_TOTALS_PT')
-
-              # rm(connection,jdbcConnection,jdbcDriver,JAVA_HOME,query,tableCommentQuery,columnCommentQuery,i,j,chunk,instanceName,pb,pbC,res,resCol,result,resultColumns,START_BIND,END_BIND,START_LOAD,END_LOAD,START_SAVE,END_SAVE)
-              rm(connection)
-              message("Done...")
-
-
-              } else {
-              message (paste0('File connection.csv not found at: ', getwd(), '/driverJDBC folder'))
-              message("Please, create a csv file with two lines of text with four fields on it:")
-              message(" - host_port_sid: The url connection string. Ex: jdbc:oracle:thin:@localhost:1521/orcl")
-              message(" - username: The user name to access the database")
-              message(" - password: The user password")
-              message(" - tablename: The name of the table with data to read")
-              message("Save the file as connection.csv at the driverJDBC folder")
-              message('Example: First line of text (always the same): "host_port_sid";"username";"password";"tablename"')
-              message('Example: Secnd line of text (your data here) : "jdbc:oracle:thin:@localhost:1521/orcl";"desenv";"desenv";"MODEL_ONE_CLEAN"')
-            }
-            
-          } else {
-                  message(paste0('Oracle driver not found at: ', getwd(),'/driverJDBC/ojdbc6.jar'))
-                  message('Please, download the driver (ojdbc6.jar) from Oracle and put in the driverJDBC folder')
-          }
+          #Load connection parameters
+          connection <- read.table("driverJDBC/connection.csv", header=TRUE, sep=";", strip.white=TRUE, stringsAsFactors=FALSE )
+          
+          
+          COHORT_DEATH                    <- loadCohortTable(connection,'COHORT_DEATH')
+          COHORT_DIAGNOSIS                <- loadCohortTable(connection,'COHORT_DIAGNOSIS')
+          COHORT_DRUGS                    <- loadCohortTable(connection,'COHORT_DRUGS')
+          COHORT_DRUGS_DETAIL             <- loadCohortTable(connection,'COHORT_DRUGS_DETAIL')
+          COHORT_ENCOUNTER                <- loadCohortTable(connection,'COHORT_ENCOUNTER')
+          
+          query = "SELECT DEIDENTIFIED_ID
+          , AGE_FIRST_OUTP_ENCOUNTER
+          , SYMPTOM_CODE, SYMPTOM_DESCRIPTION
+          , SYMPTOM_DURATION
+          FROM COHORT_FRST_OUTPAT_ENCOUNTER"
+          COHORT_FRST_OUTPAT_ENCOUNTER    <- loadCohortTable(connection,'COHORT_FRST_OUTPAT_ENCOUNTER', query)
+          
+          COHORT_HEART_RISK_FACTOR        <- loadCohortTable(connection,'COHORT_HEART_RISK_FACTOR')
+          COHORT_INDEXEVENT_OUTCOMEEVENT  <- loadCohortTable(connection,'COHORT_INDEXEVENT_OUTCOMEEVENT')
+          COHORT_INTERVENTION             <- loadCohortTable(connection,'COHORT_INTERVENTION')
+          COHORT_LABTEST_TRANSPOSED       <- loadCohortTable(connection,'COHORT_LABTEST_TRANSPOSED')
+          COHORT_OVERALL_DBPOP_GENDER       <- loadCohortTable(connection,'COHORT_OVERALL_DBPOP_GENDER')
+          
+          COHORT_PATIENT                  <- loadCohortTable(connection,'COHORT_PATIENT')
+          COHORT_PCI                      <- loadCohortTable(connection,'COHORT_PCI')
+          COHORT_SELECTION_CRITERIA       <- loadCohortTable(connection,'COHORT_SELECTION_CRITERIA')
+          
+          query = "SELECT DEIDENTIFIED_ID, ICD10_FIRST_SURGERY, AGE_FIRST_SURGERY
+          , ICD10_LAST_SURGERY, AGE_LAST_SURGERY
+          , SURGERY_INTERVAL, SURGERY_QUANTITY
+          , AGE_SURGERY_1, WEIGHT_1, HEIGHT_1, ICD10_1, SURGICAL_SPECIALITY_1
+          , AGE_SURGERY_2, WEIGHT_2, HEIGHT_2, ICD10_2, SURGICAL_SPECIALITY_2
+          , AGE_SURGERY_3, WEIGHT_3, HEIGHT_3, ICD10_3, SURGICAL_SPECIALITY_3
+          , AGE_SURGERY_4, WEIGHT_4, HEIGHT_4, ICD10_4, SURGICAL_SPECIALITY_4
+          FROM COHORT_SURGERY"
+          COHORT_SURGERY                  <- loadCohortTable(connection,'COHORT_SURGERY', query)
+          COHORT_SURVIVAL                 <- loadCohortTable(connection,'COHORT_SURVIVAL')
+          
+          
+          INDICATOR_ENCOUNTER_GENDER      <- loadCohortTable(connection,'INDICATOR_ENCOUNTER_GENDER')
+          INDICATOR_ENCOUNTER_GENDER_PT   <- loadCohortTable(connection,'INDICATOR_ENCOUNTER_GENDER_PT')
+          
+          INDICATOR_BASE_QUALITY          <- loadCohortTable(connection,'INDICATOR_BASE_QUALITY')
+          INDICATOR_DIAGNOSIS_PROFILE     <- loadCohortTable(connection,'INDICATOR_DIAGNOSIS_PROFILE')
+          INDICATOR_DIAGNOSIS_PROFILE_PT  <- loadCohortTable(connection,'INDICATOR_DIAGNOSIS_PROFILE_PT')
+          
+          INDICATOR_ICD10_CONFORMITY      <- loadCohortTable(connection,'INDICATOR_ICD10_CONFORMITY')
+          INDICATOR_ICD10_CONFORMITY_PT   <- loadCohortTable(connection,'INDICATOR_ICD10_CONFORMITY_PT')
+          
+          INDICATOR_PATIENT               <- loadCohortTable(connection,'INDICATOR_PATIENT')
+          INDICATOR_PATIENT_PT            <- loadCohortTable(connection,'INDICATOR_PATIENT_PT')
+          
+          INDICATOR_PATIENT_GENDER        <- loadCohortTable(connection,'INDICATOR_PATIENT_GENDER')
+          INDICATOR_PATIENT_GENDER_PT     <- loadCohortTable(connection,'INDICATOR_PATIENT_GENDER_PT')
+          
+          INDICATOR_SURGERY               <- loadCohortTable(connection,'INDICATOR_SURGERY')
+          INDICATOR_SURGERY_PT            <- loadCohortTable(connection,'INDICATOR_SURGERY_PT')
+          
+          PAUA_TOTALS                     <- loadCohortTable(connection,'PAUA_TOTALS')
+          PAUA_TOTALS_PT                  <- loadCohortTable(connection,'PAUA_TOTALS_PT')
+          
+          # rm(connection,jdbcConnection,jdbcDriver,JAVA_HOME,query,tableCommentQuery,columnCommentQuery,i,j,chunk,instanceName,pb,pbC,res,resCol,result,resultColumns,START_BIND,END_BIND,START_LOAD,END_LOAD,START_SAVE,END_SAVE)
+          rm(connection)
+          message("Done...")
+          
+          
+        } else {
+          message (paste0('File connection.csv not found at: ', getwd(), '/driverJDBC folder'))
+          message("Please, create a csv file with two lines of text with four fields on it:")
+          message(" - host_port_sid: The url connection string. Ex: jdbc:oracle:thin:@localhost:1521/orcl")
+          message(" - username: The user name to access the database")
+          message(" - password: The user password")
+          message(" - tablename: The name of the table with data to read")
+          message("Save the file as connection.csv at the driverJDBC folder")
+          message('Example: First line of text (always the same): "host_port_sid";"username";"password";"tablename"')
+          message('Example: Secnd line of text (your data here) : "jdbc:oracle:thin:@localhost:1521/orcl";"desenv";"desenv";"MODEL_ONE_CLEAN"')
         }
+        
+      } else {
+        message(paste0('Oracle driver not found at: ', getwd(),'/driverJDBC/ojdbc6.jar'))
+        message('Please, download the driver (ojdbc6.jar) from Oracle and put in the driverJDBC folder')
+      }
     }
+  }
 } else {
-      message('Data loaded')
+  message('Data loaded')
 }
 ```
 ---
-title: "A method for cohort selection of cardiovascular disease records from an electronic health record system"
+  title: "A method for cohort selection of cardiovascular disease records from an electronic health record system"
 author: "Maria Tereza Fernandes Abrahao"
 date: "March 11, 2016"
 output: html_document
 ---
-
-The following data corresponds to the published paper.
+  
+  The following data corresponds to the published paper.
 
 ###Overall data totals###  
 Profile of all database records, summarizes the available patients and diagnosis to compund cohorts.
@@ -769,14 +769,24 @@ tableCount <- incCount(tableCount, "Pauá Diagnosis Profile")
 
 ```
 
-`r I(pasteLabel("Tabela", tableCount, "Pauá Diagnosis Profile", FALSE))` Pauá diagnosis profile.
+`r I(pasteLabel("Table", tableCount, "Pauá Diagnosis Profile", FALSE))` Pauá diagnosis profile.
+
+```{r set-options, message=FALSE, results='asis',echo=FALSE}
+options(width=200)
+opts_chunk$set(comment = "", warning = FALSE, message = FALSE, echo = TRUE, tidy = TRUE, size="small")
+
+# cat(tableCat(INDICATOR_DIAGNOSIS_PROFILE), sep = "\n")
+
+kable(INDICATOR_DIAGNOSIS_PROFILE,
+      format = "html", output = F, align = c("l", "l", "r", "r"), escape=F,
+      table.attr="class='table table-striped table-hover'")
+
+```
+
+
+####Diagnosis distribution Histogram####
 
 ```{r message=FALSE, results='asis',echo=FALSE}
-perfilDiag <- INDICATOR_DIAGNOSIS_PROFILE
-
-qualidadeBase <- tableCat(perfilDiag)
-
-cat(qualidadeBase, sep = "\n")
 
 figCount <- incCount(figCount, "Diagnostic distribution by chapter")
 
@@ -857,8 +867,8 @@ demog <- merge(COHORT_PATIENT,COHORT_DIAGNOSIS,by="DEIDENTIFIED_ID")
 
 # Recode age intervals
 demog$FAIXA_ETARIA <- recode(demog$AGE_AT_DIAG_Y, 
-  '18:30 = "18 a 29"; 30:40 = "30 a 39"; 40:50 = "40 a 49"; 50:60 = "50 a 59"; 60:70 = "60 a 69"; 70:80 = "70 a 79"; 80:110 = "80 e mais" ; ; ; ;',
-   as.factor.result=TRUE)
+                             '18:30 = "18 a 29"; 30:40 = "30 a 39"; 40:50 = "40 a 49"; 50:60 = "50 a 59"; 60:70 = "60 a 69"; 70:80 = "70 a 79"; 80:110 = "80 e mais" ; ; ; ;',
+                             as.factor.result=TRUE)
 
 xy.pop <- data.frame (table (demog$FAIXA_ETARIA[demog$GENDER=="M" & demog$AGE_AT_DIAG_Y > 17]))
 xx.pop <- data.frame (table (demog$FAIXA_ETARIA[demog$GENDER=="F" & demog$AGE_AT_DIAG_Y > 17]))
@@ -981,7 +991,7 @@ library(RcmdrMisc)
 COHORT_INDEXEVENT_OUTCOMEEVENT$AGE_INDEX_YEAR <- 
   with(COHORT_INDEXEVENT_OUTCOMEEVENT, AGE_AT_INDEX_EVENT/365)
 with(COHORT_INDEXEVENT_OUTCOMEEVENT, (t.test(AGE_INDEX_YEAR, 
-  alternative='two.sided', mu=0.0, conf.level=.95)))
+                                             alternative='two.sided', mu=0.0, conf.level=.95)))
 
 # MEDIAN AGE GENDER
 COHORT_INDEXEVENT_OUTCOMEEVENT <- merge(COHORT_INDEXEVENT_OUTCOMEEVENT, COHORT_PATIENT[c("DEIDENTIFIED_ID","GENDER")],  by=c("DEIDENTIFIED_ID"))
