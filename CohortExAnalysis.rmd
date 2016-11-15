@@ -976,6 +976,8 @@ remove(.Survfit)
 demographStatin <- merge (COHORT_PATIENT[c("DEIDENTIFIED_ID","GENDER","MARITAL_STATUS","EDUCATION_LEVEL")],COHORT_INTERVENTION[c("DEIDENTIFIED_ID","INTERVENTION_FLAG")], by="DEIDENTIFIED_ID")
 demographStatin <- merge (demographStatin, COHORT_INDEXEVENT_OUTCOMEEVENT[c("DEIDENTIFIED_ID","AGE_AT_INDEX_EVENT")], by="DEIDENTIFIED_ID")
 demographStatin$AGE_AT_INDEX_EVENT <- floor(demographStatin$AGE_AT_INDEX_EVENT/365)
+# demographStatin$AGE_RANGE <- recode(demographStatin$AGE_AT_INDEX_EVENT, 
+#                                    '18:30 = "18 a 29"; 30:40 = "30 a 39"; 40:50 = "40 a 49"; 50:60 = "50 a 59"; 60:70 = "60 a 69"; 70:80 = "70 a 79"; 80:110 = "80 e mais" ; ; ; ;', as.factor.result=TRUE)
 demographStatin$AGE_RANGE <- recode(as.factor(demographStatin$AGE_AT_INDEX_EVENT), 
   '18:49 = "18 a 49"; 50:59 = "50 a 59"; 60:69 = "60 a 69"; 70:79 = "70 a 79"; 80:99 = "80 e mais" ; ; ; ;',
    as.factor.result=TRUE)
@@ -1276,8 +1278,8 @@ local({
   cat("\npercentages:\n")
   print(round(100*.Table/sum(.Table), 2))
   .Probs <- c(0.5,0.5) 
-  .Test <- chisq.test(.Table, correct=FALSE)
-  print(.Test)
+  # .Test <- chisq.test(.Table, correct=FALSE)
+  # print(.Test)
 })
 
 local({
