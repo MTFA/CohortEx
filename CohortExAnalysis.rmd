@@ -727,10 +727,10 @@ ICD-10 Strict: At least 5 valid characters
 ICD-10 Relax:  At least 3 valid characters
 
 ````{r message=FALSE, results='asis',echo=FALSE}
-tableCount <- incCount(tableCount, "PauÃ¡ Totals")
+tableCount <- incCount(tableCount, "Pauá Totals")
 ````
 
-`r I(pasteLabel("Table", tableCount, "PauÃ¡ Totals", FALSE))` Overall database totals.
+`r I(pasteLabel("Table", tableCount, "Pauá Totals", FALSE))` Overall database totals.
 
 ````{r message=FALSE, results='asis',echo=FALSE}
 cat(tableCat(PAUA_TOTALS), sep="\n")
@@ -765,11 +765,11 @@ cat(tableCat(INDICATOR_ENCOUNTER_GENDER), sep="\n")
 
 ```{r message=FALSE, results='asis',echo=FALSE}
 
-tableCount <- incCount(tableCount, "Pauá Diagnosis Profile")
+tableCount <- incCount(tableCount, "Pau? Diagnosis Profile")
 
 ```
 
-`r I(pasteLabel("Table", tableCount, "Pauá Diagnosis Profile", FALSE))` Pauá diagnosis profile.
+`r I(pasteLabel("Table", tableCount, "Pau? Diagnosis Profile", FALSE))` Pau? diagnosis profile.
 
 ```{r set-options, message=FALSE, results='asis',echo=FALSE}
 options(width=200)
