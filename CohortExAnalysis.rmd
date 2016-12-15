@@ -765,11 +765,11 @@ cat(tableCat(INDICATOR_ENCOUNTER_GENDER), sep="\n")
 
 ```{r message=FALSE, results='asis',echo=FALSE}
 
-tableCount <- incCount(tableCount, "Pau? Diagnosis Profile")
+tableCount <- incCount(tableCount, "Pauá Diagnosis Profile")
 
 ```
 
-`r I(pasteLabel("Table", tableCount, "Pau? Diagnosis Profile", FALSE))` Pau? diagnosis profile.
+`r I(pasteLabel("Table", tableCount, "Pauá Diagnosis Profile", FALSE))` Pauá diagnosis profile.
 
 ```{r set-options, message=FALSE, results='asis',echo=FALSE}
 options(width=200)
