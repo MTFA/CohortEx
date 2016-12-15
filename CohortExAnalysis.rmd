@@ -225,7 +225,7 @@ loadCohortTable <- function(connection, tableName,query){
 }
 ```
 
-````{r SurvivalNiceGraph function, message=FALSE,echo=FALSE}
+```{r SurvivalNiceGraph function, message=FALSE,echo=FALSE}
 #' Create a Kaplan-Meier plot using ggplot2
 #'
 #' @param sfit: a survfit object
@@ -473,7 +473,7 @@ ggkm <- function(sfit,
 ##################################################################################################
 ##################################################################################################
 ##################################################################################################
-````
+```
 
 
 ```{r LoadData, message=FALSE,include=FALSE, echo=FALSE}
@@ -726,39 +726,39 @@ Profile of all database records, summarizes the available patients and diagnosis
 ICD-10 Strict: At least 5 valid characters
 ICD-10 Relax:  At least 3 valid characters
 
-````{r message=FALSE, results='asis',echo=FALSE}
+```{r message=FALSE, results='asis',echo=FALSE}
 tableCount <- incCount(tableCount, "Pauá Totals")
-````
+```
 
 `r I(pasteLabel("Table", tableCount, "Pauá Totals", FALSE))` Overall database totals.
 
-````{r message=FALSE, results='asis',echo=FALSE}
+```{r message=FALSE, results='asis',echo=FALSE}
 cat(tableCat(PAUA_TOTALS), sep="\n")
-````
+```
 
 ####Gender Distribution#### 
 
-````{r message=FALSE, results='asis',echo=FALSE}
+```{r message=FALSE, results='asis',echo=FALSE}
 tableCount <- incCount(tableCount, "Gender distribution")
-````
+```
 
 `r I(pasteLabel("Table", tableCount, "Gender distribution", FALSE))` Gender distributions.
 
-````{r message=FALSE, results='asis',echo=FALSE}
+```{r message=FALSE, results='asis',echo=FALSE}
 cat(tableCat(INDICATOR_PATIENT_GENDER), sep="\n")
-````
+```
 
 ####Encounter Distribution#### 
 
-````{r message=FALSE, results='asis',echo=FALSE}
+```{r message=FALSE, results='asis',echo=FALSE}
 tableCount <- incCount(tableCount, "Encounters")
-````
+```
 
 `r I(pasteLabel("Table", tableCount, "Encounters", FALSE))` Encounters by gender distribution.
 
-````{r message=FALSE, results='asis',echo=FALSE}
+```{r message=FALSE, results='asis',echo=FALSE}
 cat(tableCat(INDICATOR_ENCOUNTER_GENDER), sep="\n")
-````
+```
 
 
 ####Diagnosis distribution####
@@ -792,7 +792,7 @@ figCount <- incCount(figCount, "Diagnostic distribution by chapter")
 
 ```
 
-````{r PlotDiagnostics, echo=FALSE, results='asis'}
+```{r PlotDiagnostics, echo=FALSE, results='asis'}
 require(car)
 
 indProf <- subset(INDICATOR_DIAGNOSIS_PROFILE,INDICATOR_DIAGNOSIS_PROFILE$ICD10_CHAPTER != "TOTAL")
@@ -800,7 +800,7 @@ indProf$ICD10_CHAPTER <- recode(indProf$ICD10_CHAPTER,"'UNKNOWN'='UNK'" )
 indProf$ICD10_CHAPTER <- with(indProf,factor(ICD10_CHAPTER,levels=c('I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX','XXI','UNK'), ordered=TRUE))
 ggplot(indProf,aes(x=indProf$"ICD10_CHAPTER",y=indProf$"PERCENT",axis.title.y="Percent",axis.title.x="ICD10 CHAPTER")) + geom_bar(stat="identity") + labs(title = "Diagnostic distribution by chapter") + xlab("ICD-10 Chapter") + ylab("Frequency (%)")
 
-`````
+```
 
 `r I(pasteLabel("\nFigure", figCount, "Diagnostic distribution by chapter", FALSE))` Diagnostic distribution by chapter.
 
