@@ -24,7 +24,7 @@ Steps to use CohortEx:
     The CohortEx Editor just recognizes repositories forked from this one. 
   - Change the settings of the forked repository to run GitHub Pages on docs folder. 
   - Once GitHub deploys the site, access it in the URL pointed by GitHub 
-    (something like: https://<your_login_name>.github.io/CohortEx). 
+    (something like: https://&lt;your_login_name&gt;.github.io/CohortEx). 
 
 You will see a site with functions to edit or create new studies. 
 Example: [http://mtfa.github.io/CohortEx](http://mtfa.github.io/CohortEx)
