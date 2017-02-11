@@ -1,0 +1,52 @@
+<div id="login-modal" class="modal hide fade">
+	<div class="modal-header">
+		<a href="#" class="close">x</a>
+		<h3>Authenticate with GitHub?</h3>
+	</div>
+	<div class="modal-body">
+		<p>
+			In order to use CohortEx, you must first authenticate with your <a href="https://github.com">GitHub</a> account.
+		</p>
+		<p class="error alert alert-error" style="display:none">
+		</p>
+		<form id="login">
+			<label for="username">Username</label>
+			<input type="text" id="username" name="username" />
+			<label for="password">Password</label>
+			<input type="password" id="password" name="password" /><br/>
+			<input type="submit" class="btn btn-success" value="Login &gt;" />
+		</form>
+		<p>
+			<small>Don't have a GitHub account?  <a href="https://github.com/join" title="Join GitHub!">Create one here!</a></small>
+		</p>
+	</div>
+</div>
+<script>
+	$(document).ready(function() {
+		// Handle login
+		$('form#login').submit(function() {
+			Stevenson.log.debug('Submitting login form');
+			$('#login-modal .error').hide();
+			$('#login input').attr("disabled", "disabled");
+			
+			Stevenson.Account.clear();
+			Stevenson.Account.username = $('#username').val();
+			Stevenson.Account.password = $('#password').val();
+
+			Stevenson.repo.login({
+				error: function(message){
+					$('#login input').removeAttr("disabled");
+					Stevenson.log.debug('Login failed with message: ' + message);
+					$('#login-modal .error').html('Login Failed: ' + message);
+					$('#login-modal .error').show();
+				},
+				success: function(user){
+					$('#login input').removeAttr("disabled");
+					$('#login-modal').modal('hide');
+					window.location = Stevenson.Account.siteBaseURL + '/cohortexCms';
+				}
+			});
+			return false;
+		});
+	});
+</script>

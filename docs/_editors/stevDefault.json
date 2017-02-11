@@ -1,0 +1,42 @@
+{
+   "title":"Default Page",
+   "description":"The following fields will be used to update the page metadata",
+   "fields":[
+      {
+         "name":"title",
+         "label":"Title",
+         "type":"text",
+         "required":true
+      },
+      {
+         "name":"tags",
+         "type":"repeating",
+         "label":"Keywords"
+      },
+      {
+         "name":"summary",
+         "type":"textarea",
+         "label":"Description"
+      },
+      {
+         "name":"author",
+         "type":"text",
+         "label":"Author"
+      },
+      {
+         "label":"Published",
+         "name":"published",
+         "type":"checkbox",
+         "value": true
+      },
+      {
+         "label":"Authentication Required",
+         "name":"authRequired",
+         "type":"checkbox",
+         "value": false
+      }
+   ],
+   "rte": {
+      "document_base_url": "https://pmadril.github.io/CohortExEditor/"
+   }
+}

@@ -1,0 +1,107 @@
+---
+layout: stevDefault 
+title: Edit Site
+authRequired: true
+mainMenu: filesStudiesMenuBar
+scripts: [/cohortexJs/cohortex_editSiteStudies.js]
+---
+
+<div class="navbar main-menu">
+	<div class="navbar-inner">
+		<ul class="nav">
+			<li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+					File
+					<b class="caret"></b>
+				</a>
+				<ul class="dropdown-menu">
+					<li>
+						<a href="javascript:void(0);" class="new">New Study</a>
+					</li>
+					<li>&nbsp;</li>
+					<li>
+						<a href="javascript:void(0);" class="file-edit">Edit</a>
+					</li>
+					<li>
+						<a href="javascript:void(0);" class="file-copy">Copy</a>
+					</li>
+					<li>
+						<a href="javascript:void(0);" class="file-delete">Delete</a>
+					</li>
+				</ul>
+			</li>
+			<li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+					View
+					<b class="caret"></b>
+				</a>
+				<ul class="dropdown-menu">
+					<li>
+						<a href="javascript:void(0)" class="view-history">History</a>
+					</li>
+				</ul>
+			</li>
+			<li class="dropdown">
+				<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+					Site
+					<b class="caret"></b>
+				</a>
+				<ul class="dropdown-menu">
+					<li>
+						<a href="{{ site.baseurl }}/cohortexCms/cohortex_editStudy.html#docs/_config.yml" class="site-configure">Configure</a>
+					</li>
+					<!-- CohortExDevli>
+						<a href="{{ site.baseurl }}/cohortexCms/cohortexTemplates.html" class="site-templates">Templates</a>
+					</li -->
+				</ul>
+			</li>
+		</ul>
+	</div>
+</div>
+<ul class="breadcrumb">
+	<li><a href="{{ site.baseurl }}/cohortexCms">Home</a> <span class="divider">/</span></li>
+	<!-- CohortExDev li><a href="{{ site.baseurl }}/cohortexCms/cohortexSite.html" class="repo"></a > <span class="divider">/</span></li -->
+	<li class="active path">Data</li>
+</ul>
+<div id="grid-container">
+</div>
+<div id="confirmation-modal" class="modal hide">
+	<div class="modal-header">
+		<h3>Are you sure?</h3>
+	</div>
+	<div class="modal-body">
+		<a href="javascript:void(0);" class="btn yes">Yes</a> &nbsp; 
+		<a href="javascript:void(0);" class="btn no">No</a>
+	</div>
+</div>
+
+<div id="move-modal" class="modal hide">
+	<div class="modal-header">
+		<h3>Move File</h3>
+	</div>
+	<div class="modal-body">
+		<label for="file-name">New Location</label>
+		<input type="text" id="new-path" /><br/>
+		<input type="hidden" id="old-path" />
+		<a href="javascript:void(0);" class="btn cancel no">Cancel</a>&nbsp;<a href="#" class="btn btn-success yes">Move File &gt;</a>
+	</div>
+</div>
+<div id="copy-modal" class="modal hide">
+	<div class="modal-header">
+		<h3>Copy File</h3>
+	</div>
+	<div class="modal-body">
+		<label for="file-name">New Location</label>
+		<input type="text" id="new-path" /><br/>
+		<input type="hidden" id="old-path" />
+		<a href="javascript:void(0);" class="btn cancel no">Cancel</a>&nbsp;<a href="#" class="btn btn-success yes">Copy File &gt;</a>
+	</div>
+</div>
+<div id="delete-file-modal" class="modal hide">
+	<div class="modal-header">
+		<h3>Really Delete File?</h3>
+	</div>
+	<div class="modal-body">
+		<a href="javascript:void(0);" class="btn btn-danger yes">Yes</a>&nbsp;<a href="#" class="btn no">No</a>
+	</div>
+</div>

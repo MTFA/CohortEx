@@ -1,0 +1,215 @@
+{
+	"$schema": "http://json-schema.org/schema#",
+	"title": " ",
+	"type": "object",
+	"properties": {
+		"Research and Study Identification": {
+			"type": "object",
+			"title": "Research and Study Identification",
+			"layout": "grid",
+			"properties": {
+							  "research_id": {
+								 "title": "Research ID",
+								 "type": "string",
+								 "description": "Anything that identifies your research among your others researches. (May be a number.)",
+								 "required": true
+							  },
+							  "res_description": {
+								 "title": "Research Description",
+								 "type": "string",
+								 "description": "Description of your main research.",
+								 "required": true
+							  },
+							  "study_id": {
+								 "title":"Study ID",
+								 "type":"string",
+								 "description": "Anything that identifies your study among your others studies for the currrent research.",
+								 "required":true
+							  },
+							  "study_description": {
+								 "title": "Study Description",
+								 "type":"string",
+								 "description": "A description of this study.",
+								 "required":true
+							  },
+							  "summary": {
+								 "title": "Study summary",
+								 "type":"string",
+								 "format":"textarea",
+								 "description": "Brief summary of this study in the context of your current research."
+							  },
+							  "published": {
+								 "title": "Published",
+								  "type":"boolean",
+								  "format": "checkbox"
+							  },
+							  "keywords": {
+								  "title": "Study keywords",
+								  "type":"array",
+								  "format": "table",
+								  "uniqueItems": true,
+								  "description": "Keywords for this study.",
+								  "items": {
+									"type": "object",
+									"title": "Keyword",
+									"properties": {
+										"keyword": {
+											"type": "string"
+										}
+									}
+								  }
+							  }
+				}
+		},
+		"Enrollment": {
+			"type": "object",
+			"title": "Enrollment Interval",
+			"format": "grid",
+			"properties": {
+					"initialDate": {
+						"default": "01/01/1985",
+						"readonly": true,
+						"title": "Begin",
+						"type": "string",
+						"format": "date",
+						"description": "Enrollment begin date"
+						},
+					"endDate": {
+						"default": "31/12/2016",
+						"readonly": true,
+						"title": "End",
+						"type": "string",
+						"format": "date",
+						"description": "Enrollment end date"
+					}
+				}
+		},
+		"studyInterval": {
+			"type": "object",
+			"title": "Study Interval",
+			"format": "grid",
+			"properties": {
+				"initialDate": {
+					"title": "Begin",
+					"type": "string",
+					"format": "date",
+					"description": "Study begin date",
+					 "default": "01/01/2010"
+					},
+				"endDate": {
+					"title": "End",
+					"type": "string",
+					"format": "date",
+					"description": "Study end date",
+					 "default": "01/01/2016"
+				}
+			}
+		},
+		"personDemographics": {
+			"type": "object",
+			"title": "Demographics",
+			"properties": {
+				"minAge": {
+					"title": "Minimum age",
+					"type": "integer",
+					"description": "Lowest age to participate on study",
+					"required": true,
+					"default": "18"
+					},
+				"maxAge": {
+					"title": "Maimum age",
+					"type": "integer",
+					"description": "Maximum age to participate",
+					"required": true,
+					 "default": "110"
+					},
+				"gender": {
+					"title": "Genders",
+					"type": "array",
+					"uniqueItems": true,
+					"required": true,
+					"items": {
+						"type": "string",
+						"enum": ["Male","Female","Unknown","Others"]
+						}
+					},
+				"disableGenderFilters": {
+					"title": "Disable filtering by:",
+					"type": "array",
+					"uniqueItems": true,
+					"items": {
+						"type": "string",
+						"enum": ["Gender","Min. Age","Max. Age"]
+						}
+					}
+			}
+		},
+		"cohortSelection": {
+			"type": "object",
+			"title": "Cohort Selection",
+			"description": "Selected cohort follows all criterias (AND Logic)",
+			"properties": {
+				"diagnosisSelection": {
+				  "type": "array",
+				  "format": "table",
+				  "title": "Diagnosis",
+				  "description": "Any of the following diagnosis codes (OR Logic), and none of the exclusions codes.", 
+				  "uniqueItems": true,
+				  "items": {
+					"type": "object",
+					"title": "ICD-10 Diagnosis",
+					"properties": {
+					  "ICD0_category": {
+						"title": "ICD10 Code",
+						"description": "A partial or full ICD-10 code",
+						"type": "string",
+						"enum": [
+						  "ICD10_CATEGORY_PARTIAL",
+						  "ICD10_CATEGORY_FULL",
+						  "ICD10_SUBCATEGORY",
+						  "ICD10_ETIOLOGY",
+						  "ICD10_EXTENSION"
+						],
+						"default": "ICD10_CATEGORY_PARTIAL"
+					  },
+					  "code": {
+						"type": "string",
+						"minLength": 3,
+						"maxLength": 8 
+					  },
+					  "exclusion": {
+						"title": "exclusion",
+						"type": "boolean",
+						"format": "checkbox"
+					  }
+					}
+				  }
+				},
+				"surgeriesSelection": {
+					"type": "object",
+					"title": "Surgeries",
+					"description": "Filter surgeries by sql pattern like: %REVASC% . Use upper case.",
+					"properties": {
+						"surgeriesFilter": {
+							"title": "Surgery filter",
+							"type": "string",
+							"required": true,
+							"default": "%REVASC%"
+							},
+						"disableSurgeryFilter": {
+							"title": "Disable filtering by:",
+							"type": "array",
+							"uniqueItems": true,
+							"items": {
+								"type": "string",
+								"enum": ["Surgery"]
+								}
+							}
+					}
+				}
+			}
+		}
+	}
+}
+	   
+

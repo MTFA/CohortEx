@@ -1,0 +1,37 @@
+---
+layout: stevDefault 
+title: CMS 
+authRequired: true
+scripts: [/cohortexJs/cohortexEditor-home.js]
+mainMenu: cmsMenuBar
+---
+
+<h2>Edit <span id="select-title"></span> - Select a CohortEx Repository</h2>
+<ul class="nav nav-tabs" id="myTab">
+	<li class="active">
+		<a href="#mine">My Repositories</a>
+	</li>
+</ul>
+<div class="tab-content repos">
+	<div class="tab-pane active" id="mine">
+		<img src="" class="img-polaroid org-avatar" id="user-avatar"/>
+		<h4>My Repositories</h4>
+		<form id="mine-filter" class="form-inline">
+			<input type="text" name="filter" placeholder="Filter..." />
+		</form>
+		<hr class="clear" />
+	</div>
+</div>
+<div id="branch-modal" class="modal hide">
+	<div class="modal-header">
+		<h3>Select Branch</h3>
+	</div>
+	<div class="modal-body">
+		<p>
+			Current repository: <span id="current-repo"></span>
+		</p>
+		<select id="branches">
+		</select><br/>
+		<a href="#" class="btn">Use Branch &gt;</a>
+	</div>
+</div>

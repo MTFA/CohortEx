@@ -1,0 +1,22 @@
+---
+layout: stevDefault
+title: Studies and Posts
+---
+<h1>{{ page.title }}</h1>
+<h3>Posts</h3>
+<ul class="posts">
+
+  {% for post in site.posts %}
+    <li><span>{{ post.date | date_to_string }}</span> &raquo; <a href="{{ site.baseurl }}{{ post.url }}" title="{{ post.title }}">{{ post.title }}</a></li>
+  {% endfor %}
+    
+</ul>
+<h3>Studies</h3>
+<ul class="posts">
+
+  {% for study in site.stdyPosts %}
+    <li><span>{{ study.date | date_to_string }}</span> &raquo; <a href="{{ site.baseurl }}{{ study.url }}" title="{{ study.title }}">{{ study.title }}</a></li>
+  {% endfor %}
+    
+</ul>
+

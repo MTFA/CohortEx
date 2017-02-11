@@ -1,0 +1,54 @@
+---
+layout: stevDefault
+title: 'Tereza - CohortEx Studies'
+authRequired: false
+mainMenu: mainMenuBar
+schema: null
+tags: []
+published: true
+---
+
+<div class="container">
+  <div class="hero-unit"><img class="pull-left" title="CohortEx Logo" src="{{ site.baseurl }}/css/images/logo-largeCohortEx.png" width="150" height="150" />
+  <h1>{{ site.auth_short_name }}'s CohortEx Studies Site</h1>
+  <h3>Posts and studies made with CohortEx Extractor</h3>
+  </div>
+  <div class="row">
+  <div class="span6">
+  <h2>Manage Your Study Through GitHub</h2>
+  <p>Define the cohort parameters to extract and analyze patients from a Paua model.</p>
+  <p><a class="btn" href="{{ site.baseurl }}/cohortexCms?type=study">Edit/Create a study &gt;</a></p>
+  </div>
+  <div class="span6">
+  <h2>Manage Your Posts&nbsp;Through GitHub</h2>
+  <p>Create and edit post to your blog.</p>
+  <p><a class="btn" href="{{ site.baseurl }}/cohortexCms?type=post">Edit/Create a post &gt;</a></p>
+  </div>
+  </div>
+  <div class="blurb">
+  <h1>CohortEx Posts</h1>
+  <p>This site stores post's and studies using CohortEx extraction tools. <a href="about">Read more about...</a></p>
+  </div>
+  <div class="row">
+  <div class="span6">
+  <h2>Last Studies...</h2>
+    <ul class="posts">
+
+      {% for study in site.stdyPosts %}
+        <li><span>{{ study.date | date_to_string }}</span> &raquo; <a href="{{ site.baseurl }}{{ study.url }}" title="{{ study.title }}">{{ study.title }}</a></li>
+      {% endfor %}
+
+    </ul>
+  </div>
+  <div class="span6">
+  <h2>Last Posts...</h2>
+    <ul class="posts">
+
+      {% for post in site.posts %}
+        <li><span>{{ post.date | date_to_string }}</span> &raquo; <a href="{{ site.baseurl }}{{ post.url }}" title="{{ post.title }}">{{ post.title }}</a></li>
+      {% endfor %}
+
+    </ul>
+  </div>
+  </div>
+</div>

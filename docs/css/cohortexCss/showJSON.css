@@ -1,0 +1,222 @@
+BODY, H1, H2, H3, H4, H5, H6, DL, DT, DD {
+  margin: 0;
+  padding: 0;
+  color: #444;
+  font: 13px/15px Arial, Verdana, Helvetica;
+}
+H1 {
+  text-align: center;
+  font: 24px Helvetica, Verdana, Arial;
+  padding: 20px 0 10px 0;
+  background: #FBFBFB;
+  border-bottom: solid 1px #fff;
+}
+#lnks {
+  border-top: solid 1px #dfdfdf;
+  border-bottom: solid 1px #dfdfdf;
+  margin: 0 0 10px 0;
+  padding: 5px;
+  background: #f1f1f1;
+  line-height: 20px;
+  text-align: center;
+}
+#lnks B {
+  padding: 0 3px;
+}
+#body {
+  padding: 20px;
+  background: #f1f1f1;
+}
+H1 B {
+  font-weight: normal;
+  color: #069;
+}
+H1 A {
+  color: #0E8F13;
+  text-decoration: underline;
+}
+H1 I {
+  font-style: normal;
+  color: #0E8F13;
+}
+A {
+  color: #337ab7;
+  text-decoration: none;
+}
+A:hover {
+  text-decoration: underline;
+}
+.ib {
+    position: relative;
+    display: -moz-inline-box;
+    display: inline-block;
+}
+* html .ib {
+    display: inline;
+}
+*:first-child + html .ib {
+    display: inline;
+}
+TABLE {
+  border-collapse:collapse;
+  border: solid 1px #ccc;
+  clear: left;
+}
+TH {
+  text-align: left;
+  padding: 4px 8px;
+  text-shadow: #fff 1px 1px -1px;
+  background: #f1f1f1;
+  white-space:nowrap;
+  cursor:pointer;
+  font-weight: bold;
+}
+TH, TD, TD DT, TD DD {
+  font-size: 13px;
+  font-family: Arial;
+}
+TD {
+  padding: 8px 8px 0 8px;
+  vertical-align: top;
+}
+DL {
+  clear: left;
+}
+DT {
+  margin: 10px 0 5px 0;
+  font: bold 18px Helvetica, Verdana, Arial;
+  min-width: 200px;
+  overflow: hidden;
+  clear: left;
+  float: left;
+  display:block;
+  white-space:nowrap;
+}
+DD {
+  margin: 5px 10px;
+  font: 18px Arial;
+  padding: 2px;
+  display: block;
+  float: left;
+}
+DL DL DT { 
+  font: bold 16px Arial;
+}
+DL DL DD {
+  font: 16px Arial;
+}
+HR {
+    display:none;
+}
+TD DL HR
+{
+    display:block;
+    padding: 0;
+    clear: left;
+    border: none;
+}
+TD DL
+{
+    padding: 4px;
+    margin: 0;
+    height:100%;
+    max-width: 700px;
+}
+DL TD DL DT {
+  padding: 2px;
+  margin: 0 10px 0 0;
+  font-weight: bold;
+  font-size: 13px;
+  width: 120px;
+  overflow: hidden;
+  clear: left;
+  float: left;
+  display:block;
+}
+DL TD DL DD {  
+  margin: 0;
+  padding: 2px;
+  font-size: 13px;
+  display: block;
+  float: left;
+}
+TBODY>TR:last-child>TD {
+  padding: 8px;
+}
+THEAD
+{
+  -webkit-user-select:none;
+  -moz-user-select:none;
+}
+.desc, .asc {
+  background-color: #FAFAD2;
+}
+.desc {
+  background-color: #D4EDC9;
+}
+TH B {
+  display:block;
+  float:right;
+  margin: 0 0 0 5px;
+  width: 0;
+  height: 0;
+
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #ccc;
+  border-bottom: none;
+}
+.asc B {
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #333;
+  border-bottom: none;
+}
+.desc B {
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid #333;
+  border-top: none;
+}
+#show-json {
+  display:none;
+}
+#mask {  
+  display: none;
+  position:absolute;
+  top:0;
+  left:0;
+  height:100%;
+  width:100%; 
+  background: rgba(0,0,0,0.7);
+  z-index: 1;
+}
+.show-json #show-json, .show-json #mask {
+  display:block;
+}
+#show-json {
+  position: absolute;
+  left: 50%;
+  margin: 0 0 0 -350px;
+  border: solid 4px #ccc;
+  padding: 10px 20px;
+  background: #fff;
+  text-align: center;
+  float: left;  
+  z-index: 2;
+}
+H3 {
+  font-size: 18px;
+  margin: 0 0 10px 0;
+}
+#show-json TEXTAREA {
+  width: 750px;
+  height: 400px;
+  overflow:visible;
+  display: block;
+}
+#show-json BUTTON {
+  margin: 10px 0 0 0;
+  padding: 5px 10px;
+  clear: left;
+}

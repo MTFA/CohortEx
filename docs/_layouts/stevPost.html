@@ -1,0 +1,30 @@
+---
+layout: stevDefault
+---
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=313766222068236";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+<div class="post">
+    <h1>{{ page.title }}</h1>
+    <em>
+    	Posted on <span class="date">{{ page.date | date_to_string }}</span> by <span class="author">{{ site.author }}</span>
+    </em>
+    <hr class="large" />
+	<div class="content">
+		{{ content }}
+	</div>
+    <span class="meta">
+    	<small>By {{ site.author }} &copy; {{page.date | date: "%Y"}}</small>
+    </span>
+</div>
+<hr class="large"/>
+<div class="comments">
+    <h4>Comments</h4>
+    <div class="fb-comments" data-href="{{site.url}}{{page.url}}" data-width="470" data-num-posts="2"></div>
+</div>

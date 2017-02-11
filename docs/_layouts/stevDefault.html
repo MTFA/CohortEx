@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>{% if page.title %} {{ page.title }} | {% endif %} {{site.name}} - {{site.description}}</title>
+		<meta name="description" content="{{page.description}}" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="shortcut icon" href="{{ site.baseurl }}/css/images/logo-smallCohortEx.png" />
+		<link rel="stylesheet" href="{{ site.baseurl }}/css/stevCss/bootstrap.min.css" />
+		<link rel="stylesheet" href="{{ site.baseurl }}/css/stevCss/bootstrap-responsive.min.css" />
+		<link rel="stylesheet" href="{{ site.baseurl }}/css/stevCss/dataTables.bootstrap.css" />
+		{% for style in page.styles %}<link rel="stylesheet" href="{{ site.baseurl }}{{ style }}" />{% endfor %} 
+		<link rel="stylesheet" href="{{ site.baseurl }}/css/stevCss/app.css" />
+		<!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+		<!--[if lt IE 9]>
+			<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+        <!-- script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script -->
+        <!-- script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script -->
+        <script src="{{ site.baseurl }}/stevJs/bootstrap.min.js"></script>
+		<script src="{{ site.baseurl }}/stevJs/jquery.mustache.js"></script>
+		<script src="{{ site.baseurl }}/stevJs/jquery.dataTables.js"></script>
+		<script src="{{ site.baseurl }}/stevJs/dataTables.bootstrap.js"></script>
+		<script src="{{ site.baseurl }}/stevJs/mustache.js"></script>
+		<script src="{{ site.baseurl }}/stevJs/Base64.js"></script>
+		<script src="{{ site.baseurl }}/stevJs/underscore.js"></script>
+		<script src="{{ site.baseurl }}/stevJs/github-api.js"></script>
+		<script src="{{ site.baseurl }}/stevJs/Stevenson.js"></script>
+		{% for script in page.scripts %}<script src="{{ site.baseurl }}{{ script }}"></script>{% endfor %} 
+		<script>
+			Stevenson.loginRequired = {{page.authRequired}};
+		</script>
+	</head>
+	<body>
+		{% case page.mainMenu %}
+			{% when 'stevMenuBar' %}
+				{% include stevMenuBar.html %}
+			{% when 'cmsMenuBar' %}
+				{% include cmsMenuBar.html %}
+			{% when 'mainMenuBar' %}
+				{% include mainMenuBar.html %}
+			{% when 'filesStudiesMenuBar' %}
+				{% include filesStudiesMenuBar.html %}
+			{% when 'filesPostsMenuBar' %}
+				{% include filesPostsMenuBar.html %}
+			{% else %}
+				{% include mainMenuBar.html %}
+		{% endcase %}
+		<div class="container-fluid">
+			<div class="row">
+				<div class="span12">
+					<div id="message-container"></div>
+				</div>
+			</div>
+			{{content}}
+			<hr/>
+			<footer>
+				<p>CohortEx Parameters Editor: Based on <a href="https://github.com/StevensonCMS/StevensonCMS.github.io">StevensonCMS</a> - Apache License 2.0</p>
+			</footer>
+		</div>
+		{% include stevLogin.html %}
+		{% include stevLoader.html %}
+	</body>
+</html>

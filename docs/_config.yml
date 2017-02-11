@@ -1,0 +1,30 @@
+# Name of your site
+name: CohortEx Editor
+auth_short_name: Tereza
+auth_long_name: Maria Tereza Fernandes Abrahao
+
+# Short description
+description: Cohort Parameters Editor
+
+# Your name, as you want it to appear underneath each post and in the footer
+author: Maria Tereza Fernandes Abrahao
+
+# The URL of your actual domain. This will be used to make absolute links in the RSS feed.
+url: https://github.com/MTFA/CohortEx/
+
+# Exclude system files
+exclude: [.gitignore]
+
+markdown: kramdown
+kramdown:
+  smart_quotes: ["apos", "apos", "quot", "quot"]
+
+permalink: /blog/:year/:month/:day/:title
+
+collections:
+  stdyPosts:
+    output: true
+  posts:
+    output: true
+
+

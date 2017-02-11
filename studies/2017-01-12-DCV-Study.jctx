@@ -1,0 +1,77 @@
+---
+schema: cohortexV1.0.0
+layout: cohortexStudy
+researcher_id: tereza.abrahao@usp.br
+description: 'Tereza Abrahao'
+title: 'DCV Study'
+summary: 'Test of cohortex editor'
+tags:
+  - cohortex
+published: true
+authRequired: true
+---
+
+{
+	"Research and Study Identification": {
+		"research_id": "DCV",
+		"res_description": "DCV research on Incor patient database",
+		"study_id": "Statins",
+		"study_description": "A study of statins influence on DCV",
+		"summary": "Um estudo das estatinas para testar o CohortEx no celular. Teste entra I50. Testa inclusao e exclusao do I50.",
+		"published": false,
+		"keywords": [
+			{
+				"keyword": "DCV"
+			},
+			{
+				"keyword": "Statins"
+			},
+			{
+				"keyword": "Heart diseases"
+			},
+			{
+				"keyword": "test"
+			}
+		]
+	},
+	"Enrollment": {
+		"initialDate": "",
+		"endDate": ""
+	},
+	"studyInterval": {
+		"initialDate": "2008-01-01",
+		"endDate": "2016-01-01"
+	},
+	"personDemographics": {
+		"minAge": 18,
+		"maxAge": 100,
+		"gender": [
+			"Male",
+			"Female"
+		],
+		"disableGenderFilters": []
+	},
+	"cohortSelection": {
+		"diagnosisSelection": [
+			{
+				"ICD0_category": "ICD10_CATEGORY_PARTIAL",
+				"code": "I21",
+				"exclusion": false
+			},
+			{
+				"ICD0_category": "ICD10_CATEGORY_PARTIAL",
+				"code": "I22",
+				"exclusion": false
+			},
+			{
+				"ICD0_category": "ICD10_CATEGORY_PARTIAL",
+				"code": "I23",
+				"exclusion": false
+			}
+		],
+		"surgeriesSelection": {
+			"surgeriesFilter": "%REVASC%",
+			"disableSurgeryFilter": []
+		}
+	}
+}

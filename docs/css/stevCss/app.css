@@ -1,0 +1,39 @@
+@media (min-width: 979px) {
+body {
+	padding-top: 60px;
+	padding-bottom: 40px;
+}
+}
+
+.clear {
+	clear:both;
+}
+
+.folder-close {
+	cursor: pointer
+}
+
+.folder-close input {
+	display: none
+}
+
+.hero-unit img {
+	margin: 10px;
+	border-radius: 10px;
+}
+
+.navbar img {
+	border-radius: 2px;
+}
+
+.org-avatar {
+	float: left;
+	margin-right: 10px;
+	margin-bottom: 10px;
+	width: 100px;
+	height: 100px;
+}
+
+#your-repos-container li, #favorite-repos-container li, .list-unstyled li {
+	list-style: none;
+}

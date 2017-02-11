@@ -1,0 +1,76 @@
+---
+layout: stevDefault
+title: Study Page
+---
+<script>
+    Stevenson.studyURL = "https://raw.githubusercontent.com/{{ site.github.repository_nwo }}/master/{{ page.studyPath }}";
+</script>
+<div id="mask"></div>
+
+<h1>Parameters of study: <i>{{ page.title }}</i>. Posted on <b><span class="date">{{ page.date | date_to_string }}</span></b> by <b><span class="author">{{ page.description }}</span></b></h1>
+<h3>{{ page.summary }}</h3>
+
+<div id="lnks">
+  <a href="javascript:Stevenson.ext.showJSONDoc(null, true)">view json datasource</a>
+  <b>from original url:</b>
+  <a href="https://raw.githubusercontent.com/{{ site.github.repository_nwo }}/master/{{ page.studyPath }}">https://raw.githubusercontent.com/{{ site.github.repository_nwo }}/master/{{ page.studyPath }}</a>
+</div>
+
+<div id="body" style="overflow: scroll">
+  
+  <div id="show-json">
+    <h3>This reports json data source</h3>
+    <textarea></textarea>
+    <button onclick="document.body.className=null;">Close Window</button>
+  </div>
+  
+  <div id="content"></div>
+
+</div>
+
+<script>    !window.JSON && document.write(unescape('%3Cscript src="http://ajax.cdnjs.com/ajax/libs/json2/20110223/json2.js"%3E%3C/script%3E'))</script>
+
+<div id="mask"></div>
+
+<h1>Study parameters are described by the schema: <i>{{ page.schema }}</i></h1>
+
+<script type="text/javascript" >    
+    var dataSchema="https://raw.githubusercontent.com/{{ site.github.repository_nwo }}/master/schemas/{{ page.schema }}.json";
+    var docsonFrame = "{{ site.baseurl }}/cohortexDocson/docson_frame.html";
+    document.write("<iframe id='" + dataSchema +
+        "' style='padding: 0; border: 0; width:100%; background: transparent' src='" +
+        docsonFrame + "#" + dataSchema + "'></iframe>");
+    function receiveMessage(event) {
+        console.log("<", event)
+        if (event.data.id && event.data.id == "docson") {
+          var frame = document.getElementById(event.data.url);
+          if(event.data.action == "resized") {
+            frame.height = event.data.height + 18;
+          }
+          if(event.data.action == "ready") {
+            console.log(frame.parentNode)
+            frame.contentWindow.postMessage({ id: "docson", font: window.getComputedStyle(frame.parentNode).fontFamily}, "*");
+          }
+        }
+
+    }
+    window.addEventListener("message", receiveMessage, false);
+</script>
+<span class="meta">
+    <small>By {{ site.author }} &copy; {{page.date | date: "%Y"}}</small>
+</span>
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/all.js#xfbml=1&appId=313766222068236";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));
+</script>
+<hr class="large"/>
+<div class="comments">
+    <h4>Comments</h4>
+    <div class="fb-comments" data-href="{{site.url}}{{page.url}}" data-width="470" data-num-posts="2"></div>
+</div>

@@ -1,0 +1,43 @@
+---
+layout: stevDefault
+schema: cohortexV1.0.0 
+title: Edit CohortEx Study Parameters
+authRequired: true
+scripts: [/stevJs/yaml.js, /stevJs/jsoneditor/jsoneditor.min.js, /stevJs/tinymce/tinymce.min.js, /cohortexJs/cohortexEditStudy-page.js, /stevJs/epiceditor/js/epiceditor.min.js]
+---
+
+<a href="javascript:window.history.back()" class="cancel">&lt; Back</a>
+<form id="rename-page" class="form-inline">
+	<h2>Editing <input id="page-path" type="text" />&nbsp;<!-- input value="Rename" type="submit" class="btn btn-success" / --></h2>
+</form>
+<form id="edit-page" class="form-horizontal">
+	<fieldset class="container properties">
+		<legend>Research Parameters</legend>
+		<p></p>
+		<div class="control-group">
+			<label for="schema" class="control-label">CohortEx Schema</label>
+			<div class="controls">
+				<select id="schema" name="schema">
+				</select>
+			</div>
+		</div>
+		<div class="fields">
+		</div>
+	</fieldset>
+	<fieldset class="container content">
+	</fieldset>
+	<fieldset class="container buttons">
+		<legend>Update Study Parameters on GitHub</legend>
+		<div class="control-group">
+			<label for="message" class="control-label">Commit Message</label>
+			<div class="controls">
+				<input id="message" name="message" type="text" placeholder="Enter a commit message..." class="span6" /><br/>
+			</div>
+			<div class="controls">
+				<br/>
+				<a class="btn btn-success save" href="#">Save Changes</a> &nbsp; 
+				<a class="btn cancel" href="javascript:window.history.back()">Cancel</a>
+			</div>
+		</div>
+	</fieldset>
+</form>

@@ -1,0 +1,42 @@
+---
+layout: stevDefault
+title: Edit Post
+authRequired: true
+scripts: [/stevJs/yaml.js, /stevJs/tinymce/tinymce.min.js, /cohortexJs/cohortexEditPost-page.js, /stevJs/epiceditor/js/epiceditor.min.js, /stevJs/jsoneditor/jsoneditor.min.js]
+---
+
+<a href="javascript:window.history.back()" class="cancel">&lt; Back</a>
+<form id="rename-page" class="form-inline">
+	<h2>Editing <input id="page-path" type="text" />&nbsp;<input value="Rename" type="submit" class="btn btn-success" /></h2>
+</form>
+<form id="edit-page" class="form-horizontal">
+	<fieldset class="container properties">
+		<legend>Edit post text</legend>
+		<p></p>
+		<div class="control-group">
+			<label for="layout" class="control-label">Page Layout</label>
+			<div class="controls">
+				<select id="layout" name="layout">
+				</select>
+			</div>
+		</div>
+		<div class="fields">
+		</div>
+	</fieldset>
+	<fieldset class="container content">
+	</fieldset>
+	<fieldset class="container buttons">
+		<legend>Update Study Parameters on GitHub</legend>
+		<div class="control-group">
+			<label for="message" class="control-label">Commit Message</label>
+			<div class="controls">
+				<input id="message" name="message" type="text" placeholder="Enter a commit message..." class="span6" /><br/>
+			</div>
+			<div class="controls">
+				<br/>
+				<a class="btn btn-success save" href="#">Save Changes</a> &nbsp; 
+				<a class="btn cancel" href="javascript:window.history.back()">Cancel</a>
+			</div>
+		</div>
+	</fieldset>
+</form>

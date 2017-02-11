@@ -1,0 +1,146 @@
+<script id="repo-item" type="text/html">
+	<div class="span12 well repo" style="{{style}}" id="{{full_name}}">
+		<a href="#{{full_name}}" data-repo="{{full_name}}" class="open">
+			<strong>{{#permissions}}
+				<i class="icon-pencil"></i>&nbsp;
+			{{/permissions}} {{full_name}}</strong>
+			<br/>
+			<small>{{description}}</small>
+		</a>
+	</div>
+</script>
+<script id="grid" type="text/html">
+<table class="table table-hover" id="files">
+	<thead>
+		<tr>
+			<th></th>
+			<th>Name</th>
+			<th>Size</th>
+			<th>SHA</th>
+		</tr>
+	</thead>
+	<tbody>
+	</tbody>
+</table>
+</script>
+<script id="file" type="text/html">
+	<tr data-path="{{path}}" class="{{type}}">
+		<td>
+			<em class="icon-{{type}}"></em>&nbsp;
+			<input type="checkbox" />
+		</td>
+		<td>
+			{{ name }}
+		</td>
+		<td>
+			{{ size }}
+		</td>
+		<td>
+			{{ sha }}
+		</td>
+	</tr>
+</script>
+<script id="template" type="text/html">
+	<li>
+		<h5>{{ name }}</h5>
+		<a href="{{ templateurl }}" class="btn">Edit Template</a>
+		<a href="{{ editorurl }}" class="btn">Edit Dialog</a>
+	</li>
+</script>
+<script id="history-item" type="text/html">
+	<hr/>
+	<dl class="dl-horizontal">
+		<dt>Author</dt>
+		<dd>
+			<a href="{{ author.html_url }}">
+				{{ author.login }}
+			</a>
+		</dd>
+		<dt>Date</dt>
+		<dd>{{ commit.author.date }}</dd>
+		<dt>Message</dt>
+		<dd>{{ commit.message }}</dd>
+	</dl>
+</script>
+
+<!-- Page Content Editors -->
+<script id="page-content-textarea" type="text/html">
+	<legend>Page Content</legend>
+	<textarea id="content" rows="20" style="width:100%" placeholder="Write your page...">{{content}}</textarea><br/>
+</script>
+<script id="page-content-json" type="text/html">
+	<legend>CohortEx Parameters</legend>
+	<div id="json-editor"></div>
+	<!-- textarea id="content" style="display:inline">{{content}}</textarea -->
+</script>
+<script id="page-content-markdown" type="text/html">
+	<legend>Page Content</legend>
+	<div id="markdown-editor"></div>
+	<textarea id="content" style="display:none">{{content}}</textarea>
+</script>
+<script id="page-content-binary" type="text/html">
+	<legend>File Content</legend>
+	<a href="https://github.com/{{repo}}/blob/{{branch}}/{{path}}?raw=true" download>Download</a>
+	<legend>Upload New</legend>
+	<input type="file" id="upload-file-input" />
+</script>
+<script id="org-header" type="text/html">
+	<img src="{{avatar_url}}" class="img-polaroid org-avatar"/>
+	<h4><a href="https://github.com/{{ login }}" target="_blank">{{ login }}</a></h4>
+	<form id="{{ login }}-filter" class="form-inline">
+		<input type="text" name="filter" placeholder="Filter..." />
+	</form>
+	<hr class="clear" />
+</script>
+<script id="page-content-image" type="text/html">
+	<legend>File Content</legend>
+	<img id="preview-img" src="https://github.com/{{repo}}/blob/{{branch}}/{{path}}?raw=true&tstamp={{date}}" />
+	<legend>Upload New</legend>
+	<input type="file" id="upload-file-input" />
+</script>
+
+<!-- Modals -->
+<script id="new-file" type="text/html">
+	<div id="new-file-modal" class="modal">
+		<div class="modal-header">
+			<h3>New File</h3>
+		</div>
+		<div class="modal-body">
+			<form id="new-file">
+				<label for="file-name">File Name</label>
+				<input type="text" id="file-name" /><br/>
+				<a href="javascript:void(0);" class="btn cancel no">Cancel</a>&nbsp;<input type="submit" class="btn btn-success yes" value="Create File &gt;" />
+			</form>
+		</div>
+	</div>
+</script>
+<script id="history" type="text/html">
+	<div id="history-modal" class="modal">
+		<div class="modal-header">
+			<h3>History for {{ file }}</h3>
+		</div>
+		<div class="modal-body">
+			<div class="history-container">
+			</div>
+		</div>
+		<div class="modal-footer">
+			<a href="javascript:void(0);" class="btn cancel no">Close</a>
+		</div>
+	</div>
+</script>
+<script id="upload" type="text/html">
+	<div id="upload-modal" class="modal">
+		<div class="modal-header">
+			<h3>Upload File</h3>
+		</div>
+		<div class="modal-body">
+			<form id="upload-form">
+				<label for="path">Path</label>
+				<input type="text" name="path" value="{{ path }}" />
+				<label for="file">Select File</label>
+				<input type="file" name="file" id="upload-file-input" />
+				<a href="javascript:void(0);" class="btn cancel no">Cancel</a>&nbsp;<input type="submit" class="btn btn-success yes" value="Upload File &gt;" />
+			</form>
+		</div>
+	</div>
+</script>
