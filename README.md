@@ -1,6 +1,6 @@
 #  Pauá External Model and CohortEx:  
 
-Paúa (means large in extension, broad, in Tupí-Guaraní language) is an external model upon which the logical model  of an Electronic Health Record system can be mapped to extract data and statistically analize it with R.
+Pauá (means large in extension, broad, in Tupí-Guaraní language) is an external model upon which the logical model  of an Electronic Health Record system can be mapped to extract data and statistically analize it with R.
 
 Here you find the following files:  
   - CohortExScript.sql    (the model, as a set of sql queries) 
@@ -8,7 +8,7 @@ Here you find the following files:
   - CohortExAnalysis.html (the results of R script)
   - pauaModel.png         (a graphical view of the model, to better understand the set of queries)
 
-This model supports parameterization, so differents studies can be made over Paúa model.
+This model supports parameterization, so differents studies can be made over Pauá model.
 Parameters are stored as registers in a parameter table and as a json file (identified by .jctx extension) which follows a json schema (cohortexV1.0.0.json).
 To edit parameters, there is the CohortEx Editor tool, a javascript application 
 running as GitHub-Pages, with ablity to create/edit studies and blog pages.
