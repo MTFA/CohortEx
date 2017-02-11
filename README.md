@@ -19,7 +19,7 @@ Here you find the following files:
   
 Steps to use CohortEx:
 
-  - Fork this repository [Fork](https://ghbtns.com/github-btn.html?user=MTFA&repo=CohortEx&type=fork&count=true&size=large). 
+  - Fork this repository ![Fork](https://ghbtns.com/github-btn.html?user=twbs&repo=bootstrap&type=fork&count=true&size=large). 
   - Change the settings of the forked repository to run GitHub Pages on docs folder. 
   - Once GitHub deploys the site, access it in the URL pointed by GitHub. 
 
