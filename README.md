@@ -32,5 +32,5 @@ Example: [http://mtfa.github.io/CohortEx](http://mtfa.github.io/CohortEx)
 (Not ready yet): Once you publish your study, by setting the publish option during the study edition,  
 it will be run over the database and you receive the results on your github email.
 
-Learn more on [wiki](https://github.com/MTFA/CohortEx/wiki) pages.
+Learn how to personalize your fork and more on [wiki](https://github.com/MTFA/CohortEx/wiki) pages.
 
