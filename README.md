@@ -17,7 +17,7 @@ running as GitHub-Pages, with ablity to create/edit studies and blog pages.
 So, you will also find here:
   - schemas/cohortexV1.0.0.json        (the schema which describes a jctx file)
   - studies/2017-01-12-DCV-Study.jctx  (a sample study parameters file)
-  - docs/ folder                       (CohortEx Parameters Editor files)
+  - docs/ folder                       (CohortEx Parameters Editor tool files)
   
 Steps to use CohortEx:
 
@@ -35,3 +35,4 @@ it will be run over the database and you receive the results on your github emai
 
 Learn how to personalize your fork and more on [![wiki](docs/css/images/wiki.png)](https://github.com/MTFA/CohortEx/wiki) pages.
 
+[CohortEx Parameters Editor](https://github.com/pmadril/CohortExEditor) tool is a separate project, also licensed under Apache 2.0
