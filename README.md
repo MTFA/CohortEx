@@ -20,6 +20,9 @@ So, you will also find here:
   
 Steps to use CohortEx:
 
+<!-- Place this tag where you want the button to render. -->
+<a class="github-button" href="https://github.com/MTFA/CohortEx/fork" data-icon="octicon-repo-forked" data-style="mega" data-count-href="/MTFA/CohortEx/network" data-count-api="/repos/MTFA/CohortEx#forks_count" data-count-aria-label="# forks on GitHub" aria-label="Fork MTFA/CohortEx on GitHub">Fork</a>
+
   - ![Fork](docs/css/images/fork_small.png) this repository.  
     The CohortEx Editor just recognizes repositories forked from this one. 
   - Change the settings of the forked repository to run GitHub Pages on docs folder. 
