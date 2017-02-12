@@ -24,6 +24,7 @@ Steps to use CohortEx:
   - ![Fork](docs/css/images/fork_small.png) this repository.  
     The CohortEx Editor only recognizes repositories forked from this one. 
   - Change the settings of the forked repository to run GitHub Pages on docs folder. 
+    Refer to [configuring github-pages](https://help.github.com/articles/configuring-a-publishing-source-for-github-pages/) form details.
   - Once GitHub deploys the site, access it in the URL pointed by GitHub 
     (something like: https://&lt;your_login_name&gt;.github.io/CohortEx). 
 
