@@ -20,8 +20,6 @@ So, you will also find here:
   
 Steps to use CohortEx:
 
-<iframe src="https://ghbtns.com/github-btn.html?user=MTFA&repo=CohortEx&type=fork&count=true" frameborder="0" scrolling="0" width="170px" height="20px"></iframe>
-
   - ![Fork](docs/css/images/fork_small.png) this repository.  
     The CohortEx Editor just recognizes repositories forked from this one. 
   - Change the settings of the forked repository to run GitHub Pages on docs folder. 
@@ -34,5 +32,5 @@ Example: [http://mtfa.github.io/CohortEx](http://mtfa.github.io/CohortEx)
 (Not ready yet): Once you publish your study, by setting the publish option during the study edition,  
 it will be run over the database and you receive the results on your github email.
 
-Learn how to personalize your fork and more on [wiki](https://github.com/MTFA/CohortEx/wiki) pages.
+Learn how to personalize your fork and more on [![wiki](docs/css/images/wiki.png)](https://github.com/MTFA/CohortEx/wiki) pages.
 
