@@ -2398,6 +2398,9 @@ JSONEditor.defaults.editors.object = JSONEditor.AbstractEditor.extend({
     if(!this.row_container) return;
 
     // Sort editors by propertyOrder
+    var previousSize = this.property_order.length;
+    var previousProperties = this.property_order;
+
     this.property_order = Object.keys(this.editors);
     this.property_order = this.property_order.sort(function(a,b) {
       var ordera = self.editors[a].schema.propertyOrder;
@@ -2405,8 +2408,16 @@ JSONEditor.defaults.editors.object = JSONEditor.AbstractEditor.extend({
       if(typeof ordera !== "number") ordera = 1000;
       if(typeof orderb !== "number") orderb = 1000;
 
+      var isCategoryA = self.format == "categories" && (self.editors[a].schema.type == "object" || self.editors[a].schema.type == "array");
+      var isCategoryB = self.format == "categories" && (self.editors[b].schema.type == "object" || self.editors[b].schema.type == "array");
+      if(typeof isCategoryA === "boolean" && isCategoryA) ordera = ordera + 10000;
+      if(typeof isCategoryB === "boolean" && isCategoryB) orderb = orderb + 10000;
+
       return ordera - orderb;
     });
+
+    var currentSize = this.property_order.length;
+    
 
     var container;
 
@@ -2491,6 +2502,202 @@ JSONEditor.defaults.editors.object = JSONEditor.AbstractEditor.extend({
         }
       }
     }
+    // Category layout
+    else if (this.format === 'categories'){
+      ////////////////
+      
+      var k = 0;
+      var indexDeleted =0;
+      var propertyDeleted;
+      var editorDeleted;
+      var propertyDeletedIsComplex = false;
+      var tabIndexDeleted = 0;
+
+      var indexAdded =0;
+      var propertyAdded;
+      var editorAdded;
+      var propertyAddedIsComplex = false;
+      var tabIndexAdded =0;
+
+      if (previousSize > currentSize) {
+        //property deleted
+        for(var m=0; m<previousSize; m++){
+
+        indexDeleted = m;
+        propertyDeleted = previousProperties[m];
+        editorDeleted = this.cached_editors[propertyDeleted];
+        propertyDeletedIsComplex = editorDeleted.schema.type === "object" || editorDeleted.schema.type === "array";
+
+        //Looking for a deleted property, update currentTab
+        //if the current property is complex, it has a tab to hold it
+        if (propertyDeletedIsComplex) {
+          tabIndexDeleted++;
+        }
+        //otherwise, all simple properties go just in one tab (0 tab)
+
+        //We found the deleted property, so break
+        if(this.property_order[m] !== previousProperties[m]) {
+              break;
+          }
+        }
+
+        if (!propertyDeletedIsComplex) {
+            this.containerRowFluid.innerHTML = '';
+          }
+        }
+      else {
+        //property added
+        for(var m2=0; m2 < currentSize; m2++){
+
+        indexAdded = m2;
+        propertyAdded = this.property_order[m2];
+        editorAdded = this.cached_editors[propertyAdded];
+        propertyAddedIsComplex = editorAdded.schema.type === "object" || editorAdded.schema.type === "array";
+
+        //We found the added property, so break
+        if(this.property_order[m2] !== previousProperties[m2]) {
+            break;
+          }
+
+          //Still looking for a added property, update currentTab
+          //if the current property is complex, it has a tab to hold it
+          if (propertyAddedIsComplex) {
+            tabIndexAdded++;
+          }
+          //otherwise, all simple properties go just in one tab (0 tab)
+
+        }
+
+        if (!propertyAddedIsComplex) {
+          this.containerRowFluid.innerHTML = '';
+        }
+  }
+      var notComplexProperties = false;
+      var tabPanesContainers = 0;
+      $each(this.property_order, function(j,key) {
+        var editor = self.editors[key];
+        if (editor.schema.type === "object" || editor.schema.type === "array" ) {
+          tabPanesContainers++;
+        }
+        else {
+          notComplexProperties = true;
+        }
+      });
+
+      if (notComplexProperties) tabPanesContainers++;
+
+      if (this.row_container.className == "row-fluid") {
+        if (this.row_container.childElementCount > tabPanesContainers) {
+          if (propertyDeletedIsComplex) {
+            this.row_container.removeChild (editorDeleted.container);
+            this.tabs_holder.childNodes["0"].removeChild(editorDeleted.tab);
+          } 
+          else {
+            this.row_container.removeChild (this.row_container.childNodes[0]);
+            this.tabs_holder.childNodes["0"].removeChild(this.tabs_holder.childNodes["0"].childNodes[0]);
+            } 
+          $trigger(this.tabs_holder.childNodes["0"].childNodes[0],'click');
+        }
+        else if (this.row_container.childElementCount == tabPanesContainers) {
+            $each(this.property_order, function(i,key) {
+              var editor = self.editors[key];
+              var complexType = editor.schema.type == "object" || editor.schema.type == "array";
+              if(editor.property_removed) return;
+              if(k==0 || complexType) {
+                if (k==0){
+                  if (self.rows[0].schema.type == "object" || self.rows[0].schema.type == "array"){
+                    self.addRow(editor,true);
+                  }
+                }
+                else if (k == 1){
+                  k++;
+                  return;
+                  } 
+                else if (k > 1) {
+                  return;
+                }
+                k++;
+              }
+              var row = self.theme.getGridRow();
+              self.containerRowFluid.appendChild(row);
+              
+              if(editor.options.hidden) editor.container.style.display = 'none';
+              else self.theme.setGridColumnSize(editor.container,12);
+              row.appendChild(editor.container);
+            });
+          }
+        else {
+          var tabPaneHolder = self.theme.getTabContent();
+          if (propertyAddedIsComplex) {
+            //Add a panel
+            if (editorAdded.container.className != "tab-pane active") {
+                tabPaneHolder.appendChild(editorAdded.container);
+                this.row_container.appendChild(tabPaneHolder);
+              }
+              else {
+                this.row_container.appendChild(editorAdded.container);
+              }
+
+            self.tabs_holder.childNodes["0"].appendChild(editorAdded.tab);
+            $trigger(editorAdded.tab,'click');
+            
+          }
+          else {
+            var newRow = this.theme.getGridRow();
+            //check for a raw container and add one if not
+            if (this.row_container.childNodes.length > 0){
+              if (this.row_container.childNodes["0"].childNodes["0"].className != "container-fluid") {
+                //add a container at 0
+                this.row_container.insertBefore(tabPaneHolder,this.row_container.childNodes["0"]);
+                this.containerRowFluid = this.theme.getGridContainer();
+
+                this.containerRowFluid.appendChild(newRow);
+                tabPaneHolder.appendChild(this.containerRowFluid);
+                
+                if(editorAdded.options.hidden) editorAdded.container.style.display = 'none';
+                else this.theme.setGridColumnSize(editorAdded.container,12);
+                newRow.appendChild(editorAdded.container);
+
+                this.addTab(0);
+
+                self.tabs_holder.childNodes["0"].insertBefore(self.rows[0].tab, self.tabs_holder.childNodes[0].childNodes[0]);
+        
+                $trigger(this.tabs_holder.childNodes["0"].childNodes[0],'click');
+
+              }
+                else {
+                  this.containerRowFluid.appendChild(newRow);
+
+                  if(editorAdded) {
+                    if (editorAdded.options.hidden) editorAdded.container.style.display = 'none';
+                    else this.theme.setGridColumnSize(editorAdded.container,12);
+                    newRow.appendChild(editorAdded.container);
+                    }
+                  }
+              }
+              else {
+                  //add a container at 0
+                  this.row_container.insertBefore(tabPaneHolder,this.row_container.childNodes["0"]);
+                  this.containerRowFluid = this.theme.getGridContainer();
+
+                  this.containerRowFluid.appendChild(newRow);
+                  tabPaneHolder.appendChild(this.containerRowFluid);
+
+                  if(editorAdded.options.hidden) editorAdded.container.style.display = 'none';
+                  else this.theme.setGridColumnSize(editorAdded.container,12);
+                  newRow.appendChild(editorAdded.container);
+
+                  this.addTab(0);
+
+                  self.tabs_holder.childNodes["0"].appendChild(self.rows[0].tab);
+          
+                  $trigger(this.tabs_holder.childNodes["0"].childNodes[0],'click');
+              }
+            }
+        }
+      }
+
+    }
     // Normal layout
     else {
       container = document.createElement('div');
@@ -2504,9 +2711,9 @@ JSONEditor.defaults.editors.object = JSONEditor.AbstractEditor.extend({
         else self.theme.setGridColumnSize(editor.container,12);
         row.appendChild(editor.container);
       });
-    }
-    this.row_container.innerHTML = '';
-    this.row_container.appendChild(container);
+      this.row_container.innerHTML = '';
+      this.row_container.appendChild(container);
+      }
   },
   getPropertySchema: function(key) {
     // Schema declared directly in properties
@@ -2611,7 +2818,74 @@ JSONEditor.defaults.editors.object = JSONEditor.AbstractEditor.extend({
       if(typeof ordera !== "number") ordera = 1000;
       if(typeof orderb !== "number") orderb = 1000;
 
+      var isCategoryA = self.format == "categories" && (self.editors[a].schema.type == "object" || self.editors[a].schema.type == "array");
+      var isCategoryB = self.format == "categories" && (self.editors[b].schema.type == "object" || self.editors[b].schema.type == "array");
+      if(typeof isCategoryA === "boolean" && isCategoryA) ordera = ordera + 10000;
+      if(typeof isCategoryB === "boolean" && isCategoryB) orderb = orderb + 10000;
+      
       return ordera - orderb;
+    });
+  },
+  addTab: function(idx){
+      var self = this;
+      if(self.tabs_holder) {
+        self.rows[idx].tab_text = document.createElement('span');
+        if (idx == 0){
+          self.rows[idx].tab_text.textContent = (self.schema.main_title === undefined) ? "Basic" : self.schema.main_title;
+        } else {
+          self.rows[idx].tab_text.textContent = self.rows[idx].getHeaderText();
+        }
+        self.rows[idx].tab = self.theme.getTab(self.rows[idx].tab_text);
+        self.rows[idx].tab.addEventListener('click', function(e) {
+          self.active_tab = self.rows[idx].tab;
+          self.refreshTabs();
+          e.preventDefault();
+          e.stopPropagation();
+        });
+  
+      }
+    
+    },
+  addRow: function(editor, initial) {
+    var self = this;
+    var i = this.rows.length;
+    
+    if (i == 0 || editor.schema.type === 'object' || editor.schema.type === 'array'){
+      self.rows[i] = editor;
+      self.addTab(i);
+      self.theme.addTab(self.tabs_holder, self.rows[i].tab);
+    }
+    
+  },
+  refreshTabs: function(refresh_headers) {
+    var self = this;
+    $each(this.rows, function(i,row) {
+      if(!row.tab) return;
+
+      if(refresh_headers) {
+        row.tab_text.textContent = row.getHeaderText();
+      }
+      //else {
+        {
+        if(row.tab === self.active_tab) {
+          self.theme.markTabActive(row.tab);
+          if(row.container.className === "span12"){
+            self.row_container.children["0"].style.display = '';
+          }
+          else {
+            row.container.style.display = '';
+          }
+        }
+        else {
+          self.theme.markTabInactive(row.tab);
+          if(row.container.className === "span12"){
+            self.row_container.children["0"].style.display = 'none';
+          }
+          else {
+            row.container.style.display = 'none';
+          }
+        }
+      }
     });
   },
   build: function() {
@@ -2725,20 +2999,81 @@ JSONEditor.defaults.editors.object = JSONEditor.AbstractEditor.extend({
       this.editor_holder = this.theme.getIndentedPanel();
       this.container.appendChild(this.editor_holder);
 
-      // Container for rows of child editors
-      this.row_container = this.theme.getGridContainer();
-      this.editor_holder.appendChild(this.row_container);
+      if(this.schema.format === 'categories') {
+        var first_pass = true;
+        self.containerRowFluid = this.theme.getGridContainer();
+        //this.colHolder = this.theme.getGridColumn();
+        
+        this.rows=[];      
+        this.active_tab = null;
 
-      $each(this.editors, function(key,editor) {
-        var holder = self.theme.getGridColumn();
-        self.row_container.appendChild(holder);
+        this.tabs_holder = this.theme.getTopTabHolder();
+        this.editor_holder.appendChild(this.tabs_holder);
+        
+        // Container for rows of child editors
+        this.row_container = this.theme.getTabContentHolder(this.tabs_holder);
+        var tempRow  = self.theme.getGridRow();
+        this.row_container.appendChild(tempRow);
+        this.row_container = tempRow;
+        
+        $each(this.editors, function(key,editor) {
+          var tabPaneHolder = self.theme.getTabContent();
+          var holder = tabPaneHolder;
+          var rowFluidHolder = self.theme.getGridRow();
+          var colHolder = self.theme.getGridColumn();
+          rowFluidHolder.appendChild(colHolder);
 
-        editor.setContainer(holder);
-        editor.build();
-        editor.postBuild();
-      });
+          self.addRow(editor,true);
 
-      // Control buttons
+          if (editor.schema.type !== 'object' && editor.schema.type !== 'array') {
+
+            self.containerRowFluid.appendChild(rowFluidHolder);
+            
+            if (first_pass == true) {
+                holder.appendChild(self.containerRowFluid);
+                first_pass = false;
+                self.row_container.appendChild(holder);
+              }
+
+            holder = rowFluidHolder;//colHolder;
+          }
+          else {
+            self.row_container.appendChild(holder);
+          }
+
+          editor.setContainer(holder);
+          editor.build();
+          editor.postBuild();
+
+          if(self.editors[key].options.hidden) {
+            holder.style.display = 'none';
+          }
+
+          if(self.editors[key].options.input_width) {
+            holder.style.width = self.editors[key].options.input_width;
+          }
+
+        });
+  
+          $trigger(this.rows[0].tab,'click');
+        }
+
+      else {
+        // Container for rows of child editors
+        this.row_container = this.theme.getGridContainer();
+        this.editor_holder.appendChild(this.row_container);
+
+        $each(this.editors, function(key,editor) {
+          var holder = self.theme.getGridColumn();
+          self.row_container.appendChild(holder);
+  
+          editor.setContainer(holder);
+          editor.build();
+          editor.postBuild();
+        });
+      }
+
+    // Control buttons
       this.title_controls = this.theme.getHeaderButtonHolder();
       this.editjson_controls = this.theme.getHeaderButtonHolder();
       this.addproperty_controls = this.theme.getHeaderButtonHolder();
@@ -2994,7 +3329,18 @@ JSONEditor.defaults.editors.object = JSONEditor.AbstractEditor.extend({
 
       if(!prebuild_only) {
         var holder = self.theme.getChildEditorHolder();
-        self.editor_holder.appendChild(holder);
+
+        //category format
+        if(this.schema.format === 'categories') {
+          var rowHolder = self.theme.getGridRow();
+          
+          self.containerRowFluid.appendChild(rowHolder);
+          holder = rowHolder;
+        }
+        else {
+          self.editor_holder.appendChild(holder);
+        }
+
         self.editors[name].setContainer(holder);
         self.editors[name].build();
         self.editors[name].postBuild();
@@ -3316,6 +3662,16 @@ JSONEditor.defaults.editors.array = JSONEditor.AbstractEditor.extend({
       }
       this.error_holder = document.createElement('div');
       this.container.appendChild(this.error_holder);
+
+      if(this.schema.format === 'tabs_top') {
+        this.controls = this.theme.getHeaderButtonHolder();
+        this.title.appendChild(this.controls);
+        this.tabs_holder = this.theme.getTopTabHolder();
+        this.container.appendChild(this.tabs_holder);
+        this.row_holder = this.theme.getTabContentHolder(this.tabs_holder);
+
+        this.active_tab = null;
+      } else
 
       if(this.schema.format === 'tabs') {
         this.controls = this.theme.getHeaderButtonHolder();
@@ -6592,6 +6948,13 @@ JSONEditor.defaults.themes.bootstrap2 = JSONEditor.AbstractTheme.extend({
     el.innerHTML = "<ul class='nav nav-tabs span2' style='margin-right: 0;'></ul><div class='tab-content span10' style='overflow:visible;'></div>";
     return el;
   },
+  getTopTabHolder: function() {
+    var el = document.createElement('div');
+    el.className = 'tabbable tabs-over';
+    //<li><a href='#'><span></span></a></li>
+    el.innerHTML = "<ul class='nav nav-tabs' style='margin-right: 0;'></ul><div class='tab-content' style='overflow:visible;'></div>";
+    return el;
+  },
   getTab: function(text) {
     var el = document.createElement('li');
     var a = document.createElement('a');
@@ -6759,6 +7122,12 @@ JSONEditor.defaults.themes.bootstrap3 = JSONEditor.AbstractTheme.extend({
     var el = document.createElement('div');
     el.innerHTML = "<div class='tabs list-group col-md-2'></div><div class='col-md-10'></div>";
     el.className = 'rows';
+    return el;
+  },
+  getTopTabHolder: function() {
+    var el = document.createElement('div');
+    el.className = 'tabbable tabs-over';
+    el.innerHTML = "<ul class='nav nav-tabs' style='margin-right: 0;'></ul><div class='tab-content' style='overflow:visible;'></div>";
     return el;
   },
   getTab: function(text) {
