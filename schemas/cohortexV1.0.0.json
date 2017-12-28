@@ -2,6 +2,7 @@
 	"$schema": "http://json-schema.org/schema#",
 	"title": " ",
 	"type": "object",
+	"format": "categories",
 	"properties": {
 		"Research and Study Identification": {
 			"type": "object",
