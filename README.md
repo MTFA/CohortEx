@@ -1,7 +1,7 @@
 #  Pauá External Model and CohortEx:  
 
 Pauá (means large in extension, broad, in Tupí-Guaraní language) is an external model upon which the logical model  of an Electronic Health Record system can be mapped to extract data and statistically analize it with R.  
-This model is detailed in the following paper: [A method for cohort selection of cardiovascular disease records from an electronic health record system](https://authors.elsevier.com/a/1UrNl_VXePUjOS)  
+This model is detailed in the following paper: [A method for cohort selection of cardiovascular disease records from an electronic health record system](https://www.sciencedirect.com/science/article/pii/S138650561730076X)  
 CohortEx, from Cohort Extraction, is the project that sums all the pieces to make a working model.
 
 Here you find the following files:  
